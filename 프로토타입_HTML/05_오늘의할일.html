@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<script>/* V2 로그인 게이트 — 세션이 없으면 로그인 화면으로 */
+(function(){ try{ if(!localStorage.getItem('buildone_session')){ (window.top||window).location.replace('00_로그인.html'); } }catch(e){} })();
+</script>
+<script src="common_perm.js?v=1792576637"></script>
+<script src="common_header.js?v=1792583998"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BuildOne 2.0 — 오늘의 할 일</title>
+<link rel="icon" href="아이콘/favicon.svg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+<style>
+  :root{--ink:#1f2633;--sub:#6b727c;--line:#e3e7ef;--bg:#f4f6fa;--accent:#3b5bdb;--red:#e03131;--orange:#e8590c;--blue:#3b5bdb;--green:#2f9e44;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans KR','Malgun Gothic',sans-serif;font-size:14px;}
+  header.v2top{display:flex;}
+  .wrap{max-width:980px;margin:0 auto;padding:18px 22px 40px;}
+  .hello{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .hello .hi{font-size:20px;font-weight:800;} .hello .dt{color:var(--sub);margin-top:3px;}
+  .hello .sp{flex:1;}
+  .pills{display:flex;gap:8px;flex:none;}
+  .pill{display:inline-flex;flex-direction:column;align-items:center;min-width:78px;padding:8px 14px;border-radius:10px;background:#f6f8fc;border:1px solid var(--line);}
+  .pill b{font-size:22px;line-height:1.2;} .pill small{color:var(--sub);font-size:12px;}
+  .pill.red b{color:var(--red);} .pill.orange b{color:var(--orange);} .pill.blue b{color:var(--blue);}
+  .sec{margin:18px 2px 8px;font-size:15px;font-weight:800;color:#3d4451;}
+  .item{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-left:5px solid var(--blue);border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+  .item.red{border-left-color:var(--red);} .item.orange{border-left-color:var(--orange);} .item.blue{border-left-color:#91a7ff;}
+  .item .ic{font-size:20px;flex:none;width:28px;text-align:center;}
+  .item .tx{flex:1;min-width:0;} .item .tt{font-weight:700;font-size:15px;line-height:1.45;} .item .sb{color:var(--sub);font-size:13px;margin-top:2px;line-height:1.5;}
+  .item .tag{display:inline-block;font-size:11px;font-weight:700;border-radius:20px;padding:1px 8px;margin-left:6px;vertical-align:1px;}
+  .tag.red{background:#ffe3e3;color:var(--red);} .tag.orange{background:#fff0e0;color:var(--orange);} .tag.blue{background:#e7ecff;color:var(--blue);}
+  .go{flex:none;border:1px solid var(--accent);background:#fff;color:var(--accent);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
+  .go:hover{background:var(--accent);color:#fff;}
+  .empty{background:#fff;border:1px solid var(--line);border-radius:12px;padding:34px 20px;text-align:center;}
+  .empty .big{font-size:22px;font-weight:800;color:var(--green);} .empty p{color:var(--sub);margin:8px 0 0;}
+  .note{color:var(--sub);font-size:12.5px;text-align:center;margin-top:18px;}
+  /* 현장 직원(60대+) — 큰 글씨 */
+  body.big .item .tt{font-size:18px;} body.big .item .sb{font-size:15px;} body.big .go{font-size:16px;padding:10px 16px;} body.big .hello .hi{font-size:23px;} body.big .sec{font-size:17px;}
+  @media(max-width:640px){ .wrap{padding:14px 12px 30px;} .item{flex-wrap:wrap;} .go{width:100%;} }
+</style>
+</head>
+<body>
+<header class="v2top"></header>
+<div class="wrap">
+  <div class="hello">
+    <div><div class="hi" id="hi"></div><div class="dt" id="dt"></div></div>
+    <div class="sp"></div>
+    <div class="pills">
+      <div class="pill red"><b id="cRed">0</b><small>지금 할 일</small></div>
+      <div class="pill orange"><b id="cOrange">0</b><small>챙길 일</small></div>
+      <div class="pill blue"><b id="cBlue">0</b><small>오늘 · 예정</small></div>
+    </div>
+  </div>
+  <div id="list"></div>
+  <p class="note">할 일은 저절로 바뀝니다. 다른 화면에서 서명 · 결재 · 저장하면 여기에도 바로 반영됩니다.</p>
+</div>
+
+<script>
+/* ===== BuildOne 2.0 — 대시보드 · 오늘의 할 일 (로그인한 계정에 해당하는 일만) ===== */
+const $=id=>document.getElementById(id);
+const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const jget=(k,d)=>{ try{ const v=JSON.parse(localStorage.getItem(k)||'null'); return v==null?d:v; }catch(e){ return d; } };
+const pad=n=>String(n).padStart(2,'0');
+const T=new Date(); const TODAY=T.getFullYear()+'-'+pad(T.getMonth()+1)+'-'+pad(T.getDate());   /* 이 컴퓨터 날짜(한국 시간) */
+const dayDiff=(a,b)=>Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000);
+const md=d=>d?(+d.slice(5,7))+'월 '+(+d.slice(8,10))+'일':'';
+const HQ=['관리자','대표','이사','총무'], FIELD=['시설관리주임','경리','미화원','경비'];
+const SAFE='04_안전보건.html';
+
+function canOpen(link,tab){ try{ return !!(window.parent!==window&&window.parent.v2CanOpen&&window.parent.v2CanOpen(link,tab)); }catch(e){ return false; } }
+window.go=(link,tab)=>{ try{ if(window.parent.v2Open&&window.parent.v2Open(link,tab)) return; }catch(e){} location.href=link+(tab?'#'+tab:''); };
+
+/* 건물 목록이 아직 없으면(처음 실행) 건물정보 화면과 같은 기본 건물로 채움 */
+function ensureBuildings(){ const b=jget('buildone_buildings',null); if(Array.isArray(b)&&b.length) return;
+  localStorage.setItem('buildone_buildings',JSON.stringify([
+    {code:'D0517',name:'대성빌딩',region:'강남',type:'빌딩',ec:'AEG-20517',addr:'서울특별시 강남구 테헤란로 123',biz:'123-45-67890',ceo:'대성에셋(주)',tel:'02-555-1234',acct:'일반(집합건물)',lateType:'normal',alloc:'principal'},
+    {code:'D0662',name:'대성2빌딩',region:'구로',type:'빌딩',ec:'',addr:'서울특별시 구로구 디지털로 300',biz:'',ceo:'대성에셋(주)',tel:'',acct:'일반(집합건물)',lateType:'normal',alloc:'principal'}])); }
+function render(){
+  const sess=jget('buildone_session',null); if(!sess) return;
+  const role=sess.role, me=sess.worker||'', S=jget('buildone_safety_data',null), BL=jget('buildone_buildings',[]);
+  document.body.classList.toggle('big',FIELD.includes(role));
+  const DW='일월화수목금토'[T.getDay()];
+  $('hi').textContent=sess.name+' 님, 오늘의 할 일입니다';
+  $('dt').textContent=`${T.getMonth()+1}월 ${T.getDate()}일 (${DW}) · ${role}`;
+  const bname=code=>{ const b=BL.find(x=>String(x.code)===String(code)); return b?(b.name+(b.region&&!b.name.includes(b.region)?' ('+b.region+')':'')):code; };
+  const codes=(()=>{ const all=[...new Set(BL.map(b=>String(b.code)).concat(S?Object.keys(S.blds||{}):[]))];
+    return (role==='관리자'||!Array.isArray(sess.buildings))?all:all.filter(c=>sess.buildings.includes(c)); })();
+  const items=[]; const add=(sec,lv,ic,tt,sb,link,tab)=>items.push({sec,lv,ic,tt,sb,link,tab});
+  const safeOK=v2Perm('안전보건')!=='none';
+
+  if(S&&safeOK){
+    const blds=S.blds||{}, pol=(S.policy&&S.policy.versions||[]).slice(-1)[0];
+    /* ---- 🙋 나의 할 일 (직원과 연결된 계정) ---- */
+    if(me){ const code=me.split(':')[0], b=blds[code]||{sessions:[],reads:{}};
+      const mine=(b.sessions||[]).filter(x=>x.status!=='cancelled'&&(x.targets||[]).includes(me));
+      mine.filter(x=>x.method==='공지'&&!x.att[me]).forEach(x=>{ const late=x.due&&x.due<TODAY;
+        add('mine',late?'red':'orange','📢',`교육 공지 읽고 서명하기 — 「${esc(x.title)}」`+(late?'<span class="tag red">마감 지남</span>':''),`${esc(x.instructor||'대표이사')} · ${md(x.due)}까지`,SAFE,'my'); });
+      if(pol&&!(((b.reads||{})[pol.ver]||{})[me])) add('mine','orange','📄','회사 안전보건 경영방침 읽고 서명하기',`${md(pol.date)}부터 시행`,SAFE,'my');
+      mine.filter(x=>x.method==='온라인'&&x.date<=TODAY&&!x.att[me]).forEach(x=>add('mine','orange','💻',`온라인 안전교육 수강 — 「${esc(x.title)}」`,`${x.hours}시간 · 영상 보기 → 확인 문제 → 서명`,SAFE,'my'));
+      mine.filter(x=>x.method!=='공지'&&x.method!=='온라인'&&x.openAt&&!x.closedAt&&!x.att[me]).forEach(x=>add('mine','red','✍',`지금 집합교육 중 — 출석 서명하기 「${esc(x.title)}」`,esc(x.place||''),SAFE,'my'));
+      mine.filter(x=>x.method!=='공지'&&x.method!=='온라인'&&x.date===TODAY&&!x.openAt&&!x.att[me]).forEach(x=>add('mine','blue','📚',`오늘 집합교육 — 「${esc(x.title)}」`,`${esc(x.place||'')} · 교육이 시작되면 출석 서명`,SAFE,'my'));
+      (b.rmeets||[]).filter(m=>m.status!=='cancelled'&&(m.targets||[]).includes(me)&&m.host!==me).forEach(m=>{
+        if(m.status==='scheduled'&&m.startedAt&&!(m.att||{})[me]) add('mine','red','✍',`지금 위험성평가 회의 중 — 참석 서명하기`,`「${esc(m.title)}」 · ${esc(m.place)}`,SAFE,'my');
+        else if(m.status==='scheduled'&&m.date===TODAY&&!m.startedAt) add('mine','blue','📋',`오늘 위험성평가 회의 — ${m.start}~${m.end}`,`「${esc(m.title)}」 · ${esc(m.place)} · 꼭 참석해 주세요`,SAFE,'my');
+        else if(m.status==='done'&&!(m.att||{})[me]&&!(m.shares||{})[me]) add('mine','orange','📋',`위험성평가 결과 읽고 서명하기`,`「${esc(m.title)}」 — 회의에 참석하지 못한 분`,SAFE,'my'); });
+    }
+    /* ---- 🏢 우리 건물 (관리소장) ---- */
+    if(role==='관리소장'&&me){ const code=me.split(':')[0], b=blds[code]||{sessions:[]};
+      (b.rmeets||[]).filter(m=>m.status==='scheduled'&&m.host===me&&m.date<=TODAY).forEach(m=>{ const late=m.date<TODAY?dayDiff(m.date,TODAY):0;
+        add('site',late?'red':'orange','📋',`위험성평가 회의 진행하기 — 「${esc(m.title)}」`+(late?`<span class="tag red">예정일 ${late}일 지남</span>`:''),`${md(m.date)} ${m.start}~${m.end} · ${esc(m.place)} · 참석 대상 ${m.targets.length}명`,SAFE,'risklist'); });
+      (b.sessions||[]).filter(x=>x.status!=='cancelled'&&x.method!=='공지'&&x.method!=='온라인'&&x.date===TODAY&&!x.closedAt).forEach(x=>
+        add('site',x.openAt?'blue':'orange','📚',x.openAt?`집합교육 출석 서명 받는 중 — 「${esc(x.title)}」`:`오늘 집합교육 진행 — 출석 서명 열기 「${esc(x.title)}」`,`${esc(x.place||'')} · 대상 ${x.targets.length}명`,SAFE,'edulist'));
+      const rs=(b.risks||[]).filter(r=>r.status!=='done'), od=rs.filter(r=>r.due&&r.due<TODAY), soon=rs.filter(r=>r.due&&r.due>=TODAY&&dayDiff(TODAY,r.due)<=7);
+      if(od.length) add('site','red','🔧',`개선 기한이 지난 감소대책 ${od.length}건`,od.slice(0,3).map(r=>esc(r.place)+' — '+esc(r.measure)).join(' / ')+(od.length>3?' 외':''),SAFE,'risklist');
+      if(soon.length) add('site','orange','🔧',`7일 안에 기한인 감소대책 ${soon.length}건`,soon.slice(0,3).map(r=>esc(r.place)+' ('+md(r.due)+')').join(' / '),SAFE,'risklist');
+      (b.sessions||[]).filter(x=>x.method==='공지'&&x.status!=='cancelled'&&x.due&&x.due<TODAY).forEach(x=>{ const un=x.targets.filter(k=>!x.att[k]&&k!==me);
+        if(un.length) add('site','orange','📢',`교육 공지 마감 지난 미서명 ${un.length}명 — 「${esc(x.title)}」`,`${md(x.due)} 마감 · 직원들에게 서명을 챙겨 주세요`,SAFE,'edulist'); });
+    }
+    /* ---- 🏛 본사 (대표 · 이사 · 총무 · 관리자) ---- */
+    if(HQ.includes(role)){
+      const groups={}; codes.forEach(c=>((blds[c]||{}).sessions||[]).filter(x=>x.method==='공지'&&x.status!=='cancelled').forEach(x=>{ const k=x.nid||x.id; (groups[k]=groups[k]||[]).push(x); }));
+      Object.values(groups).forEach(g=>{ const x0=g[0]; if(!(x0.due&&x0.due<TODAY)) return; const un=g.reduce((a,x)=>a+x.targets.filter(k=>!x.att[k]).length,0);
+        if(un) add('hq','red','📢',`교육 공지 마감 지났는데 미서명 ${un}명 — 「${esc(x0.title)}」`,`${md(x0.due)} 마감 · 알림톡 다시 보내기 · 확인서 출력`,SAFE,'notice'); });
+      if(role==='대표'){ const H=T.getMonth()<6?TODAY.slice(0,4)+'-01-01':TODAY.slice(0,4)+'-07-01';
+        if(!Object.values(groups).some(g=>(g[0].date||'')>=H)) add('hq','orange','📢','이번 반기에 보낸 교육 공지가 없습니다','교육 공지를 보내면 직원 휴대폰으로 알림톡이 갑니다',SAFE,'notice'); }
+      codes.forEach(c=>{ const b=blds[c]||{}, n=bname(c);
+        (b.rmeets||[]).forEach(m=>{ if(m.status==='cancelled') return; const A=m.apv||{};
+          if(m.status==='done'){
+            if(role==='이사'&&A.mgr&&!A.dir) add('hq','red','🖋',`위험성평가 결과 이사 결재 — ${esc(n)}`,`「${esc(m.title)}」 · 감독자 확인 끝남`,SAFE,'risk');
+            else if(role==='대표'&&A.dir&&!A.ceo) add('hq','red','🖋',`위험성평가 결과 대표 결재 — ${esc(n)}`,`「${esc(m.title)}」 · 이사 결재 끝남`,SAFE,'risk');
+            else if((role==='총무'||role==='관리자')&&A.mgr&&!A.ceo) add('hq','blue','🖋',`위험성평가 결재 진행 중 — ${esc(n)}`,`「${esc(m.title)}」 · ${A.dir?'대표 결재 대기':'이사 결재 대기'}`,SAFE,'risk');
+          } else if(m.status==='scheduled'){
+            if(m.date<TODAY) add('hq','red','📋',`예정일이 지났는데 열리지 않은 위험성평가 회의 — ${esc(n)}`,`「${esc(m.title)}」 · ${md(m.date)} 예정`,SAFE,'risk');
+            else if(dayDiff(TODAY,m.date)<=7) add('hq','blue','📋',(m.date===TODAY?'오늘':dayDiff(TODAY,m.date)+'일 뒤')+` 위험성평가 회의 — ${esc(n)}`,`「${esc(m.title)}」 · ${md(m.date)} ${m.start}~${m.end} · ${esc(m.place)}`,SAFE,'risk'); } });
+        const od=(b.risks||[]).filter(r=>r.status!=='done'&&r.due&&r.due<TODAY);
+        if(od.length) add('hq','orange','🔧',`개선 기한이 지난 위험요인 ${od.length}건 — ${esc(n)}`,od.slice(0,3).map(r=>esc(r.place)).join(' / ')+(od.length>3?' 외':''),SAFE,'risk'); });
+    }
+  }
+  /* ---- ⚙️ 관리 ---- */
+  if(v2Perm('시스템 설정')==='edit'){ const mc=jget('buildone_users',[]).filter(u=>u.active!==false&&u.mustChange);
+    if(mc.length) add('sys','blue','🔑',`처음 비밀번호를 아직 안 바꾼 계정 ${mc.length}개`,mc.map(u=>esc(u.name)+'('+esc(u.id)+')').join(', ')+' · 처음 로그인할 때 바꾸게 됩니다','03_사용자권한.html','');
+  }
+  if(v2Perm('건물관리')==='edit'){ BL.filter(b=>codes.includes(String(b.code))).forEach(b=>{ const miss=[!b.addr&&'소재지',!b.biz&&'사업자등록번호',!b.tel&&'관리소 연락처',!b.ceo&&'대표자'].filter(Boolean);
+    if(miss.length) add('sys','blue','🏢',`건물정보 빠진 항목 — ${esc(bname(b.code))}`,miss.join(' · ')+' 이(가) 비어 있습니다','02_건물정보.html',''); }); }
+
+  /* ---- 그리기 ---- */
+  const cnt=lv=>items.filter(i=>i.lv===lv).length;
+  $('cRed').textContent=cnt('red'); $('cOrange').textContent=cnt('orange'); $('cBlue').textContent=cnt('blue');
+  const SEC=[['mine','🙋 나의 할 일'],['site','🏢 우리 건물'],['hq','🏛 본사 · 사업장 관리'],['sys','⚙️ 관리']];
+  const ord={red:0,orange:1,blue:2};
+  let h=''; SEC.forEach(([k,t])=>{ const its=items.filter(i=>i.sec===k).sort((a,b)=>ord[a.lv]-ord[b.lv]); if(!its.length) return;
+    h+=`<div class="sec">${t}</div>`+its.map(i=>`<div class="item ${i.lv}"><div class="ic">${i.ic}</div><div class="tx"><div class="tt">${i.tt}</div>${i.sb?`<div class="sb">${i.sb}</div>`:''}</div>`
+      +(canOpen(i.link,i.tab)?`<button class="go" onclick="go('${i.link}','${i.tab}')">바로가기 ›</button>`:'')+`</div>`).join(''); });
+  if(!S&&safeOK) h=`<div class="empty"><div class="big">불러오는 중…</div><p>안전보건 자료를 준비하고 있습니다.</p></div>`+h;
+  else if(!items.length) h=`<div class="empty"><div class="big">✅ 오늘 할 일이 없습니다</div><p>수고하셨습니다. 새 할 일이 생기면 여기에 바로 나옵니다.</p></div>`;
+  $('list').innerHTML=h;
+}
+
+/* 안전보건 자료가 아직 없으면(처음 실행) 안전보건 화면을 숨겨서 한 번 열어 기본 자료를 만든 뒤 다시 그림 */
+function ensureSafety(){
+  if(jget('buildone_safety_data',null)||v2Perm('안전보건')==='none') return;
+  const f=document.createElement('iframe'); f.style.cssText='position:absolute;width:1px;height:1px;left:-9999px;border:0;visibility:hidden';
+  f.src=SAFE+'?t='+Date.now(); f.onload=()=>{ setTimeout(()=>{ render(); f.remove(); },300); }; document.body.appendChild(f);
+}
+window.addEventListener('storage',e=>{ if(['buildone_safety_data','buildone_users','buildone_buildings'].includes(e.key)) render(); });
+ensureBuildings(); render(); ensureSafety();
+</script>
+</body>
+</html>

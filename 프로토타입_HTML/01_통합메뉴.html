@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<script src="common_perm.js?v=1792576637"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BuildOne 2.0 — 통합 메뉴</title>
+<link rel="icon" type="image/svg+xml" href="아이콘/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="아이콘/favicon-32.png">
+<link rel="apple-touch-icon" href="아이콘/apple-touch-icon.png">
+<link rel="manifest" href="아이콘/site.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+<style>
+  :root{
+    --line:#e3e7ed; --ink:#23272f; --sub:#6b727c; --bg:#f4f6f9; --panel:#fff;
+    --accent:#3b5bdb; --accent-soft:#e7ecff; --good:#2f9e44; --warn:#e8590c; --nav:#20283a; --nav2:#2b3550;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{margin:0;font-family:'Noto Sans KR','Pretendard','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;}
+  /* 상단 바 제거 — main(본문)이 오른쪽 열 전체 높이를 차지해 y=0부터 시작 */
+  .layout{display:grid;grid-template-columns:290px 1fr;grid-template-rows:56px 1fr;height:100vh;grid-template-areas:"brand main" "side main";}
+  /* Brand */
+  .brand{grid-area:brand;background:var(--nav);color:#fff;display:flex;align-items:center;padding:0 16px;gap:10px;}
+  /* 워드마크 — 아이콘과 광학 정렬(line-height:1)해 세로 중앙을 맞춤 */
+  .brand .wm{font-weight:800;font-size:20px;letter-spacing:-.2px;line-height:1;white-space:nowrap;}
+  .brand .wm i{font-style:normal;color:#8ea2ff;}
+  /* 부제 — 크게·밝게·굵게 하여 확실히 보이도록 (대비 ~9:1) */
+  .brand .tag{font-size:13px;font-weight:600;color:#e6ebf5;letter-spacing:.2px;white-space:nowrap;
+    padding:4px 0 4px 11px;border-left:1px solid #4a5670;line-height:1.1;}
+  /* Top bar */
+  .top{grid-area:top;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 20px;}
+  .top select{border:1px solid var(--line);border-radius:6px;padding:6px 10px;background:#fafbfc;font-size:12px;}
+  .top .spacer{flex:1;}
+  .top .who{font-size:12px;color:var(--sub);}
+  .top .avatar{width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:700;}
+  /* Side tree */
+  .side{grid-area:side;background:var(--nav);color:#c7cfe0;overflow-y:auto;padding:6px 0 30px;}
+  .grp{border-bottom:1px solid #2a3245;}
+  .grp>.grp-h{display:flex;align-items:center;gap:8px;padding:13px 14px;cursor:pointer;font-size:15.5px;font-weight:600;color:#eef2f8;user-select:none;}
+  .grp>.grp-h:hover{background:var(--nav2);}
+  .grp>.grp-h .ico{width:18px;text-align:center;flex:none;}
+  /* 그룹명은 한 줄 고정 — 길면 말줄임(전체 텍스트는 title로) */
+  .grp>.grp-h .gt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .grp>.grp-h .arw{flex:none;font-size:10px;color:#7f8aa8;transition:transform .15s;}
+  .grp.open>.grp-h .arw{transform:rotate(90deg);}
+  .grp .kids{display:none;padding:2px 0 8px;background:#1a2130;}
+  .grp.open .kids{display:block;}
+  .leaf{display:flex;align-items:center;gap:6px;padding:9px 12px 9px 38px;font-size:14px;color:#b9c3d8;cursor:pointer;border-left:3px solid transparent;}
+  .leaf:hover{background:var(--nav2);color:#fff;}
+  .leaf.active{background:var(--nav2);color:#fff;border-left-color:var(--accent);font-weight:600;}
+  /* 하위 메뉴명도 한 줄 고정 */
+  .leaf .lt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .leaf .live{flex:none;color:#7fd88f;font-size:8px;line-height:1;font-style:normal;}
+  .badge{font-size:9px;padding:1px 5px;border-radius:8px;font-weight:700;letter-spacing:.3px;flex:none;white-space:nowrap;}
+  .badge.new{background:#ffd43b;color:#664d03;}
+  .badge.soon{background:#495265;color:#c7cfe0;}
+  .badge.improve{background:#3b5bdb;color:#fff;}
+  /* Main */
+  .main{grid-area:main;overflow:auto;padding:0;position:relative;}
+  .crumb{padding:13px 22px;color:var(--sub);font-size:14px;border-bottom:1px solid var(--line);background:var(--panel);}
+  .crumb b{color:var(--ink);}
+  .pane{padding:22px;}
+  .placeholder{max-width:760px;}
+  .placeholder h2{font-size:18px;margin:0 0 6px;display:flex;align-items:center;gap:10px;}
+  .placeholder .tag{font-size:11px;padding:2px 9px;border-radius:20px;background:var(--accent-soft);color:var(--accent);}
+  .placeholder p.d{color:var(--sub);margin:0 0 18px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:14px;}
+  .card h3{margin:0 0 10px;font-size:13px;color:var(--sub);}
+  .feat{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;}
+  .feat div{padding:7px 0;border-bottom:1px solid #f0f2f5;font-size:12.5px;}
+  .live-banner{background:#eafaf0;border:1px solid #b7e4c7;color:#237a41;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:12.5px;}
+  .live-banner b{color:#1a6b34;}
+  body.framed .crumb,body.framed #userbar{display:none!important;} body.framed iframe{height:100vh;}
+  iframe{width:100%;height:calc(100vh - 45px);border:0;background:#fff;display:block;}
+  .frame-wrap{position:relative;}
+  .frame-bar{background:#222730;color:#cfd4dc;font-size:11px;padding:6px 14px;display:flex;align-items:center;gap:10px;}
+  .frame-bar a{color:#8fb4ff;text-decoration:none;}
+  .btn{display:inline-block;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:6px;padding:8px 14px;font-size:12px;cursor:pointer;font-weight:600;text-decoration:none;}
+  .btn.ghost{background:#fff;color:var(--accent);}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--sub);margin-top:14px;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+</style>
+</head>
+<body>
+<script>
+/* 로그인 게이트 — 세션 없으면 로그인 화면으로 */
+(function(){ try{ if(!localStorage.getItem('buildone_session')){ location.replace('00_로그인.html'); } }catch(e){} })();
+</script>
+<div id="userbar" style="position:fixed;top:8px;right:18px;z-index:100;display:flex;align-items:center;gap:10px;font-size:12.5px;">
+  <span id="ubName" style="color:#3a4150;font-weight:600"></span>
+  <button id="ubLogout" style="border:1px solid #d0d5dd;background:#fff;color:#3b5bdb;border-radius:6px;padding:5px 11px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600">로그아웃</button>
+</div>
+<div class="layout">
+  <div class="brand">
+    <svg width="30" height="30" viewBox="0 0 40 40" fill="none" style="flex:none">
+      <defs><linearGradient id="bgLogo" x1="0" y1="0" x2="40" y2="40">
+        <stop offset="0" stop-color="#5b78ff"/><stop offset="1" stop-color="#3b5bdb"/></linearGradient></defs>
+      <rect x="1.5" y="1.5" width="37" height="37" rx="10" fill="url(#bgLogo)"/>
+      <rect x="8" y="22" width="6" height="10" rx="1.5" fill="#fff" opacity=".85"/>
+      <rect x="16.5" y="9" width="7" height="23" rx="2" fill="#fff"/>
+      <rect x="26" y="17" width="6" height="15" rx="1.5" fill="#fff" opacity=".85"/>
+      <rect x="18.7" y="12.6" width="2.6" height="2.6" rx=".5" fill="#3b5bdb"/>
+      <rect x="18.7" y="17" width="2.6" height="2.6" rx=".5" fill="#3b5bdb"/>
+      <rect x="18.7" y="21.4" width="2.6" height="2.6" rx=".5" fill="#3b5bdb"/>
+    </svg>
+    <span class="wm">Build<i>One</i></span>
+    <span class="tag">통합관리 2.0</span>
+  </div>
+  <nav class="side" id="side"></nav>
+  <main class="main">
+    <div class="crumb" id="crumb">홈</div>
+    <div id="pane" class="pane"></div>
+  </main>
+</div>
+
+<script>
+/* XPERP 벤치마킹 메뉴 트리
+   tag: keep(계승) / improve(개선) / new(신규 차별화) / soon(로드맵)
+   link: 동작 프로토타입 연결 */
+const MENU=[
+  {ic:'📊', label:'대시보드', tag:'keep', perm:'*', kids:[   /* 모든 계정 */
+    {label:'오늘의 할 일', full:'오늘의 할 일', tag:'keep', link:'05_오늘의할일.html'},
+  ]},
+  {ic:'🏢', label:'건물관리', full:'건물관리', tag:'keep', perm:'건물관리', kids:[
+    {label:'건물정보 등록', full:'건물정보 등록', tag:'keep', link:'02_건물정보.html'},
+  ]},
+  {ic:'🦺', label:'안전보건', full:'안전보건관리(중대재해 대비)', tag:'new', perm:'안전보건', kids:[
+    {label:'경영책임자 현황', full:'경영책임자 안전보건 현황', tag:'new', link:'04_안전보건.html', tab:'ceo'},
+    {label:'나의 안전보건', full:'나의 안전보건(내 교육 · 내 위험성평가 — 읽고 서명하기)', tag:'new', link:'04_안전보건.html', tab:'my'},
+    {label:'교육 관리', full:'교육 관리 (교육 공지 · 계획 · 실시 · 서명)', tag:'new', link:'04_안전보건.html', tab:'plan'},
+    {label:'위험성평가', full:'위험성평가 회의 · 감소대책 이행 현황', tag:'new', link:'04_안전보건.html', tab:'risk'},
+    {label:'안전교육 리스트', full:'안전교육 리스트(우리 건물 교육 서명 현황 · 집합교육 진행)', tag:'new', link:'04_안전보건.html', tab:'edulist'},
+    {label:'위험성평가 리스트', full:'위험성평가 리스트(회의 진행 · 개선할 일 · 지난 회의)', tag:'new', link:'04_안전보건.html', tab:'risklist'},
+  ]},
+  {ic:'⚙️', label:'시스템 설정', tag:'keep', perm:'시스템 설정', kids:[
+    {label:'사용자 · 권한', full:'사용자 · 권한(RBAC)', tag:'keep', link:'03_사용자권한.html'},
+  ]},
+];
+const TAG={keep:'',improve:'개선',new:'NEW',soon:'예정'};
+const TAGCLS={improve:'improve',new:'new',soon:'soon'};
+const TAGDESC={
+  keep:['계승','XPERP의 검증된 업무 흐름을 그대로 계승합니다.'],
+  improve:['개선','기존 기능을 웹·자동화로 현대화한 영역입니다.'],
+  new:['신규 차별화','XPERP에 없는 BuildOne 고유 기능입니다.'],
+  soon:['로드맵','차별화 로드맵 항목으로 순차 개발 예정입니다.'],
+};
+
+/* ===== 역할별 메뉴 (1차: 보건교육) — 로그인 세션 역할로 안전보건 메뉴를 거름 · 그 외 메뉴 권한은 2차 적용 ===== */
+/* V2 — 메뉴는 [사용자 · 권한]의 역할별 권한(로그인 때 buildone_perm에 저장: 그룹 → 없음/조회/편집)대로 보임 */
+const SAFETY_MENU={ '관리자':'*',
+  '대표':['notice','ceo','policy','plan','status','risk','permit','patrol','review','audit'],
+  '이사':['notice','policy','plan','status','risk','permit','patrol','review','audit'],
+  '총무':['notice','policy','plan','status','risk','review','audit'],
+  '관리소장':['my','edulist','risklist'], '시설관리주임':['my'], '경리':['my'], '미화원':['my'], '경비':['my'],   // 현장: 나의 안전보건 리스트 (관리소장은 우리 건물 리스트 2개 추가)
+  '건물주':['status','policy'] };
+const SAFETY_HOME={'관리자':'plan','대표':'ceo','이사':'plan','총무':'plan','관리소장':'my','시설관리주임':'my','경리':'my','미화원':'my','경비':'my','건물주':'status'};
+/* 내가 아직 서명하지 않은 교육 공지 · 경영방침 수 (현장 당사자 — 메뉴 빨간 숫자) */
+function myPending(kind){ try{ const s=JSON.parse(localStorage.getItem('buildone_session')||'null'); if(!s||!s.worker) return 0;
+  const d=JSON.parse(localStorage.getItem('buildone_safety_data')||'null'); if(!d||!d.blds) return 0;
+  const b=d.blds[s.worker.split(':')[0]]; if(!b) return 0;
+  let edu=b.sessions.filter(x=>x.method==='공지'&&x.status!=='cancelled'&&x.targets.includes(s.worker)&&!x.att[s.worker]).length;
+  const v=d.policy.versions[d.policy.versions.length-1].ver; if(!((b.reads||{})[v]||{})[s.worker]) edu++;
+  b.sessions.forEach(x=>{ if(x.status==='cancelled'||x.method==='공지'||!x.targets.includes(s.worker)||x.att[s.worker]) return;   /* 온라인 수강 · 열린 출석 서명 */
+    const t0=new Date(), td=t0.getFullYear()+'-'+String(t0.getMonth()+1).padStart(2,'0')+'-'+String(t0.getDate()).padStart(2,'0');
+    if(x.method==='온라인'?x.date<=td:(x.openAt&&!x.closedAt)) edu++; });
+  const t=new Date(), today=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'); let meet=0, risk=0;
+  (b.rmeets||[]).forEach(m=>{ if(m.status==='done'&&m.targets.includes(s.worker)&&!(m.att||{})[s.worker]&&!(m.shares||{})[s.worker]) meet++;   /* 위험성평가 불참자 결과 확인 */
+    if(m.status==='scheduled'&&m.startedAt&&m.host!==s.worker&&m.targets.includes(s.worker)&&!(m.att||{})[s.worker]) meet++;   /* 회의 중 — 본인 참석 서명 */
+    if(m.status==='scheduled'&&m.host===s.worker&&m.date<=today&&s.role==='관리소장') risk++; });   /* 위험성평가 리스트 — 오늘 진행할 회의 */
+  return kind==='my'?edu+meet:kind==='risk'?risk:edu+meet+risk; }catch(e){ return 0; } }
+function pendBadge(kind){ const n=myPending(kind); return n?`<span class="badge" id="myPend-${kind}" style="background:#e03131;color:#fff">${n}</span>`:''; }
+window.addEventListener('storage',e=>{ if(e.key!=='buildone_safety_data') return;
+  [['my','my'],['risk','risklist']].forEach(([kind,tab])=>{ const el=document.getElementById('myPend-'+kind), n=myPending(kind);
+    if(el){ if(n) el.textContent=n; else el.remove(); return; }
+    if(!n) return; const mi=MENU.findIndex(m=>m.label==='안전보건'), ki=mi<0?-1:MENU[mi].kids.findIndex(k=>k.tab===tab);   /* 0건이던 메뉴에 새로 숫자 붙이기 */
+    const lt=document.querySelector(`.leaf[data-mi="${mi}"][data-ki="${ki}"] .lt`); if(lt) lt.insertAdjacentHTML('afterend',pendBadge(kind)); }); });
+const SAFETY_ONLY=['미화원','경비','건물주'];   // 안전보건 메뉴만 보이는 계정
+const LEGACY_ROLE={'시설담당':'시설관리주임','일반직원':'미화원','조회전용':'건물주'};
+const ROLE_NOW=(()=>{ try{ const s=JSON.parse(localStorage.getItem('buildone_session')||'null'); if(!s) return '';
+  return SAFETY_MENU[s.role]?s.role:(LEGACY_ROLE[s.role]||''); }catch(e){ return ''; } })();
+/* 안전보건 항목은 직책별로(V1과 같음), 다른 메뉴는 그룹 권한대로 */
+function leafVisible(m,k){ if(m.perm==='*') return true;   /* 대시보드는 모든 계정 */
+  if(v2Perm(m.perm||m.label)==='none') return false;
+  if(k.tab==='ceo'&&/안전보건\.html$/.test(k.link||'')) return ROLE_NOW==='대표';   /* 경영책임자 현황은 대표만 */
+  if(/안전보건\.html$/.test(k.link||'')){ const sm=SAFETY_MENU[ROLE_NOW]; return sm==='*'||(Array.isArray(sm)&&sm.includes(k.tab)); }
+  if(m.label==='안전보건') return ['관리자','대표','이사','총무'].includes(ROLE_NOW);   /* 예정 항목은 본사만 */
+  return true; }
+/* 메뉴 찾기 · 열기 — 오늘의 할 일 [바로가기]가 씀 */
+function findLeaf(link,tab){ if(tab==='notice') tab='plan';   /* 교육 공지는 교육 관리로 합침 */
+  for(let mi=0;mi<MENU.length;mi++){ const ki=MENU[mi].kids.findIndex(k=>k.link===link&&(!tab||k.tab===tab));
+  if(ki>=0&&leafVisible(MENU[mi],MENU[mi].kids[ki])) return [mi,ki]; } return null; }
+window.v2CanOpen=(link,tab)=>!!findLeaf(link,tab);
+window.v2Open=(link,tab)=>{ const f=findLeaf(link,tab); if(!f) return false;
+  const g=document.querySelector(`.grp[data-mi="${f[0]}"]`); if(g) g.classList.add('open'); openLeaf(f[0],f[1]); return true; };
+function openFirst(){
+  try{ sessionStorage.removeItem('bo_open_safety'); }catch(e){}
+  const dash=findLeaf('05_오늘의할일.html');   /* 새로고침 · 로그인 · 계정 전환 때 항상 대시보드 > 오늘의 할 일 */
+  if(dash){ document.querySelectorAll('.grp').forEach(g=>g.classList.toggle('open',+g.dataset.mi===dash[0])); openLeaf(dash[0],dash[1]); return; }
+  let want=false; try{ want=sessionStorage.getItem('bo_open_safety')==='1'; sessionStorage.removeItem('bo_open_safety'); }catch(e){}
+  const mi=MENU.findIndex(m=>m.label==='안전보건'), sm=SAFETY_MENU[ROLE_NOW];
+  const mine=Array.isArray(sm)&&sm.includes('my')&&myPending()>0;
+  if(mi>=0&&v2Perm('안전보건')!=='none'&&(want||mine||SAFETY_ONLY.includes(ROLE_NOW))){   /* 서명할 일이 있으면 나의 안전보건 리스트부터 */
+    const kids=MENU[mi].kids, home=myPending('my')>0?'my':(myPending('risk')>0&&Array.isArray(sm)&&sm.includes('risklist'))?'risklist':(SAFETY_HOME[ROLE_NOW]||'ceo');
+    let ki=kids.findIndex(k=>k.tab===home&&leafVisible(MENU[mi],k)); if(ki<0) ki=kids.findIndex(k=>k.link&&leafVisible(MENU[mi],k));
+    if(ki>=0){ document.querySelectorAll('.grp').forEach(g=>g.classList.toggle('open',+g.dataset.mi===mi)); openLeaf(mi,ki); return; } }
+  const el=document.querySelector('.leaf'); if(el){ openLeaf(+el.dataset.mi,+el.dataset.ki); return; }
+  const s=(()=>{ try{ return JSON.parse(localStorage.getItem('buildone_session')||'null'); }catch(e){ return null; } })();
+  const pane=document.getElementById('pane'); pane.className='pane';
+  pane.innerHTML=`<div class="placeholder"><h2>열 수 있는 메뉴가 없습니다</h2><p class="d">이 계정(${s?s.role:'-'})에는 권한이 있는 메뉴가 없습니다. 시스템관리자에게 권한을 요청하세요.</p></div>`; }
+
+function badge(tag){ return TAG[tag]?`<span class="badge ${TAGCLS[tag]}">${TAG[tag]}</span>`:''; }
+
+function renderSide(){
+  const side=document.getElementById('side');
+  side.innerHTML=MENU.map((m,mi)=>{ const ks=m.kids.map((k,ki)=>({k,ki})).filter(x=>leafVisible(m,x.k)); if(!ks.length) return '';
+    return `
+    <div class="grp" data-mi="${mi}">
+      <div class="grp-h" onclick="toggleGrp(${mi})" title="${m.full||m.label}">
+        <span class="ico">${m.ic}</span><span class="gt">${m.label}</span>${badge(m.tag)}<span class="arw">▶</span>
+      </div>
+      <div class="kids">
+        ${ks.map(({k,ki})=>`<div class="leaf" data-mi="${mi}" data-ki="${ki}" onclick="openLeaf(${mi},${ki})" title="${k.full||k.label}${k.link?' · 동작 프로토타입':''}">
+          <span class="lt">${k.label}</span>${m.perm!=='안전보건'&&v2Perm(m.perm||m.label)==='view'?'<span class="badge" title="조회만 할 수 있습니다" style="background:#eef1f6;color:#5a6270">조회</span>':''}${/안전보건\.html$/.test(k.link||'')&&(k.tab==='my'||k.tab==='risklist')?pendBadge(k.tab==='my'?'my':'risk'):''}${badge(k.tag)}${k.link?'<i class="live" title="동작 프로토타입">●</i>':''}
+        </div>`).join('')}
+      </div>
+    </div>`; }).join('');
+  const g0=side.querySelector('.grp'); if(g0) g0.classList.add('open');
+}
+function toggleGrp(mi){ document.querySelector(`.grp[data-mi="${mi}"]`).classList.toggle('open'); }
+function openLeaf(mi,ki){
+  const m=MENU[mi], k=m.kids[ki];
+  document.querySelectorAll('.leaf').forEach(l=>l.classList.remove('active'));
+  document.querySelector(`.leaf[data-mi="${mi}"][data-ki="${ki}"]`).classList.add('active');
+  document.getElementById('crumb').innerHTML=`${m.ic} ${m.full||m.label} <span style="color:var(--line)">/</span> <b>${k.full||k.label}</b>`;
+  const pane=document.getElementById('pane');
+  document.body.classList.toggle('framed',!!k.link);
+  if(k.link){
+    pane.className='';
+    pane.innerHTML=`<div class="frame-wrap"><iframe src="${k.link}?t=${Date.now()}${k.tab?'#'+k.tab:''}" title="${k.full||k.label}"></iframe></div>`;
+  } else {
+    pane.className='pane';
+    const[tl,td]=TAGDESC[k.tag];
+    pane.innerHTML=`<div class="placeholder">
+      <h2>${k.full||k.label} <span class="tag">${tl}</span></h2>
+      <p class="d">${td}</p>
+      <div class="card">
+        <h3>화면 설계(예정) — 주요 구성</h3>
+        <div class="feat">
+          <div>· 목록 · 검색 · 필터</div><div>· 등록 · 수정 · 삭제</div>
+          <div>· 엑셀 가져오기 / 내보내기</div><div>· 상태 · 이력 추적</div>
+          <div>· 권한별 접근 제어</div><div>· 대시보드 KPI 연동</div>
+        </div>
+      </div>
+      ${k.tag==='new'||k.tag==='soon'?`<div class="live-banner">💡 <b>차별화 포인트</b> — 이 메뉴는 XPERP에 없거나 약한 영역으로, BuildOne의 경쟁 우위입니다.</div>`:''}
+      <div class="legend">
+        <span><span class="badge improve">개선</span> 웹·자동화 현대화</span>
+        <span><span class="badge new">NEW</span> BuildOne 고유 차별화</span>
+        <span><span class="badge soon">예정</span> 로드맵</span>
+        <span><span style="color:#2f9e44">● 동작</span> 실행 가능한 프로토타입</span>
+      </div>
+    </div>`;
+  }
+}
+
+renderSide();
+// 첫 화면: 권한이 있는 첫 메뉴
+openFirst();
+
+// 건물 전환은 각 모듈 화면의 자체 건물 드롭다운에서 처리(buildone_current_building 공유·storage 동기화).
+
+// 로그인 사용자 표시 + 로그아웃
+(function(){
+  try{ var s=JSON.parse(localStorage.getItem('buildone_session')||'null');
+       if(s) document.getElementById('ubName').textContent='👤 '+s.name+' · '+(s.role||''); }catch(e){}
+  document.getElementById('ubLogout').addEventListener('click',function(){
+    if(!confirm('로그아웃할까요?')) return;
+    localStorage.removeItem('buildone_session');
+    location.replace('00_로그인.html');
+  });
+})();
+</script>
+<script>/* V2 — 계정이 바뀌면(다른 탭 포함) F5 없이 새 권한으로 다시 열기 */
+window.addEventListener('storage',e=>{ if(e.key==='buildone_session'){ if(!e.newValue){ location.replace('00_로그인.html'); return; } location.replace('01_통합메뉴.html?t='+Date.now()); } });
+</script>
+</body>
+</html>

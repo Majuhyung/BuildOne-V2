@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<script>/* V2 로그인 게이트 — 세션이 없으면 로그인 화면으로 */
+(function(){ try{ if(!localStorage.getItem('buildone_session')){ (window.top||window).location.replace('00_로그인.html'); } }catch(e){} })();
+</script>
+<script src="common_perm.js?v=1792576637"></script>
+<script src="common_header.js?v=1792583998"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BuildOne 2.0 — 건물정보 등록</title>
+<style>
+  :root{
+    --line:#e3e7ed; --ink:#23272f; --sub:#6b727c; --bg:#f4f6f9; --panel:#fff;
+    --accent:#3b5bdb; --accent-soft:#e7ecff; --good:#2f9e44; --warn:#e8590c; --bad:#e03131;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Malgun Gothic","Segoe UI",sans-serif;background:var(--bg);color:var(--ink);font-size:13px;}
+  header{background:#222730;color:#fff;padding:10px 20px;display:flex;align-items:center;gap:12px;}
+  header .logo{font-weight:700;font-size:15px;} header .logo small{font-weight:400;color:#9aa1ab;font-size:11px;margin-left:6px;}
+  header .spacer{flex:1;} header .who{font-size:12px;color:#cfd4dc;}
+  .tabs{display:flex;gap:2px;background:var(--panel);border-bottom:1px solid var(--line);padding:0 14px;flex-wrap:wrap;}
+  .tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:12px 16px;font-size:14px;color:var(--sub);cursor:pointer;transition:color .12s;}
+  .tabs button:hover{color:var(--ink);}
+  .tabs button.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:700;}
+  .wrap{padding:16px 18px;}
+  .page{display:none;} .page.on{display:block;}
+  .toolbar{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
+  .toolbar .spacer{flex:1;}
+  .bldlist td,.bldlist th{text-align:left;white-space:normal;word-break:keep-all;} .bldlist td:first-child,.bldlist th:first-child{text-align:center;width:44px;}
+  .bldlist tbody tr{cursor:pointer;} .bldlist tbody tr:hover td{background:#f5f8ff;} .bldlist tbody tr.sel td{background:#eaf0ff;font-weight:600;}
+  .btn{border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer;font-weight:600;transition:filter .12s,opacity .12s;}
+  .btn:hover{filter:brightness(1.06);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .btn.ghost{background:#fff;color:var(--accent);} .btn.gray{background:#fff;color:var(--sub);border-color:var(--line);}
+  .btn.danger{background:#fff;color:var(--bad);border-color:#f3c7c7;} .btn.sm{padding:4px 9px;font-size:11px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:14px;}
+  .card h3{margin:0 0 14px;font-size:14px;display:flex;align-items:center;gap:8px;}
+  .form{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 22px;}
+  .field label{display:block;font-size:11px;color:var(--sub);margin-bottom:5px;}
+  .field input,.field select{width:100%;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:#fafbfc;font-size:13px;font-family:inherit;transition:border-color .12s,box-shadow .12s;}
+  .field input[readonly]{background:#eef1f5;color:var(--sub);}
+  input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  .full{grid-column:1 / -1;}
+  .req{color:var(--bad);}
+  .err{border-color:var(--bad)!important;background:#fff5f5!important;}
+  .field .msg{font-size:11px;color:var(--bad);margin-top:4px;min-height:0;}
+  .gridbox{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:auto;}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th,td{padding:7px 9px;border-bottom:1px solid #eef1f5;border-right:1px solid #eef1f5;text-align:center;white-space:nowrap;}
+  th{background:#eef1f6;font-weight:600;color:#41485a;position:sticky;top:0;z-index:1;}
+  th.sortable{cursor:pointer;user-select:none;} th.sortable:hover{background:#e2e8f2;}
+  th .arw{font-size:9px;color:var(--accent);margin-left:2px;}
+  td.left{text-align:left;} td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  tbody tr:hover td{background:#f6f9ff;}
+  tfoot td{background:#eef2ff;font-weight:700;}
+  td input.g,td select.g{width:100%;min-width:56px;border:1px solid transparent;border-radius:4px;padding:4px 6px;font-size:12px;background:transparent;font-family:inherit;}
+  td input.g{text-align:inherit;} td input.g.num{text-align:right;}
+  td input.g:hover,td select.g:hover{border-color:var(--line);background:#fff;}
+  td input.g:focus,td select.g:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 2px var(--accent-soft);}
+  .chip{display:inline-block;padding:2px 9px;border-radius:12px;font-size:11px;background:#eef1f5;color:var(--sub);}
+  .chip.normal{background:#e7f0ff;color:#2f5fd0;} .chip.common{background:#f3e8ff;color:#8e44ad;}
+  .chip.lease{background:#e6f4ea;color:var(--good);} .chip.vacant{background:#fdeede;color:var(--warn);}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;}
+  .kpi .l{color:var(--sub);font-size:11px;} .kpi .v{font-size:19px;font-weight:700;margin-top:5px;}
+  .search{border:1px solid var(--line);border-radius:6px;padding:6px 10px 6px 30px;background:#fafbfc url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%236b727c' stroke-width='2' viewBox='0 0 24 24'><circle cx='11' cy='11' r='7'/><path d='M21 21l-4-4'/></svg>") no-repeat 9px center;font-size:12px;min-width:210px;}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;}
+  .seg span{padding:6px 12px;font-size:12px;color:var(--sub);cursor:pointer;border-right:1px solid var(--line);}
+  .seg span:last-child{border-right:0;} .seg span.on{background:var(--accent-soft);color:var(--accent);font-weight:600;}
+  .addrow{display:flex;gap:7px;align-items:flex-end;flex-wrap:wrap;background:#f6f8ff;border:1px solid var(--accent-soft);border-radius:9px;padding:11px 12px;margin-bottom:12px;}
+  .addrow .fld{display:flex;flex-direction:column;gap:3px;} .addrow .fld small{font-size:10px;color:var(--sub);}
+  .addrow input,.addrow select{border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px;background:#fff;font-family:inherit;}
+  .dirty-badge{font-size:11px;color:var(--warn);font-weight:600;display:none;}
+  .dirty-badge.show{display:inline;}
+  .savebar{display:flex;align-items:center;gap:10px;margin-top:14px;}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#23272f;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:50;box-shadow:0 4px 16px rgba(0,0,0,.2);}
+  .toast.show{opacity:1;} .toast.ok{background:#1e6b3a;} .toast.warn{background:#8a4b12;} .toast.bad{background:#8a1f1f;}
+  .hint{font-size:11px;color:var(--sub);margin-top:8px;}
+  .empty{text-align:center;color:var(--sub);padding:24px;}
+  .subrow{display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start;}
+  .orgitem{display:flex;gap:6px;align-items:center;padding:7px 10px;margin-bottom:6px;border-radius:8px;font-size:12px;border:1px solid transparent;transition:background .12s;}
+  .orgitem input.orgname{flex:1;min-width:0;border:1px solid var(--accent);border-radius:5px;padding:5px 7px;font-size:12px;font-family:inherit;background:#fff;}
+  .orgitem input.orgname:focus{outline:none;box-shadow:0 0 0 2px var(--accent-soft);}
+  .orgitem:hover{background:#f6f8ff;} .orgitem.on{background:var(--accent-soft);color:var(--accent);font-weight:600;border-color:#c7d3ff;}
+  dialog#bldDlg{border:0;border-radius:12px;padding:0;width:760px;max-width:80vw;max-height:78vh;box-shadow:0 12px 44px rgba(0,0,0,.25);}
+  dialog#bldDlg::backdrop{background:rgba(20,25,35,.45);} dialog#bldDlg .dlg-b{max-height:calc(78vh - 120px);overflow:auto;}
+  .bo-ctxbar label,.bo-ctxbar .bo-bld{display:none!important;}
+  #bldListCard h3{display:flex;align-items:center;gap:6px;}
+  .bldlist th,.bldlist td{white-space:nowrap!important;} .bldlist td:nth-child(6),.bldlist td:nth-child(7){white-space:normal!important;min-width:90px;} .bldlist th,.bldlist td{padding:8px 7px!important;} .bldlist td.bldDelTd{width:60px;text-align:center;}
+  dialog#editDlg{border:0;border-radius:12px;padding:0;width:430px;max-width:92vw;box-shadow:0 12px 44px rgba(0,0,0,.25);}
+  dialog#editDlg::backdrop{background:rgba(20,25,35,.45);}
+  .dlg-h{padding:15px 18px;border-bottom:1px solid var(--line);font-weight:700;font-size:14px;}
+  .dlg-b{padding:16px 18px;} .dlg-f{padding:13px 18px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;}
+  .erow{display:flex;gap:12px;} .efld{margin-bottom:11px;flex:1;}
+  .efld label{display:block;font-size:11px;color:var(--sub);margin-bottom:4px;}
+  .efld input,.efld select{width:100%;border:1px solid var(--line);border-radius:6px;padding:7px 9px;font-size:13px;background:#fafbfc;font-family:inherit;}
+  .efld input:focus,.efld select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  @media(max-width:660px){ .form{grid-template-columns:1fr;} .subrow{grid-template-columns:1fr;} .kpis{grid-template-columns:1fr 1fr;} }
+</style>
+</head>
+<body>
+<header class="v2top">
+  <div class="logo">BuildOne <small>건물관리 · 건물정보 등록</small></div>
+  <div class="spacer"></div>
+  <div class="who">김소장 · 관리소장</div>
+  <button class="btn gray sm" id="btnResetAll" style="margin-left:6px">기본값 복원</button>
+</header>
+
+<div class="tabs" style="display:none">
+  <button data-t="info" class="on">건물정보</button>
+</div>
+
+<div class="wrap">
+
+  <!-- ① 단지정보 -->
+  <section class="page on" id="info">
+    <select id="bldSel" style="display:none"></select>
+    <div class="card" id="bldListCard">
+      <h3>건물 목록 <span class="hint" id="bldCount" style="font-weight:400;margin:0 0 0 4px"></span><span style="flex:1"></span><button class="btn sm" id="btnNewBld">+ 새 건물 등록</button></h3>
+      <div style="overflow-x:auto"><table class="bldlist"><thead><tr><th>No</th><th>건물명</th><th>지역 / 지점</th><th>건물코드</th><th>건물형태</th><th>소재지</th><th>대표자</th><th>관리소 연락처</th><th></th></tr></thead>
+        <tbody id="bldRows"></tbody></table></div>
+      <div class="hint" style="margin:8px 0 0">건물을 누르면 상세 정보가 팝업으로 열립니다.</div>
+    </div>
+    <dialog id="bldDlg">
+      <div class="dlg-h"><span id="bldDlgTitle">건물 기본정보</span> <span class="dirty-badge" id="dirty">● 저장되지 않은 변경</span></div>
+      <div class="dlg-b">
+      <div class="form">
+        <div class="field"><label>건물명 <span class="req">*</span></label><input id="f_name" value="대성빌딩"><div class="msg" id="m_name"></div></div>
+        <div class="field"><label>건물코드(5자리, 수정불가)</label><input id="f_code" value="D0517" readonly></div>
+        <div class="field"><label>이지스코드(금융사)</label><input id="f_ec" value="AEG-20517"></div>
+        <div class="field"><label>건물형태</label>
+          <select id="f_type"><option>빌딩</option><option>상가</option><option>오피스텔</option><option>아파트</option><option>기숙사</option><option>공장</option></select></div>
+        <div class="field"><label>지역 / 지점</label><input id="f_region" value="강남" placeholder="예: 강남"></div>
+        <div class="field full"><label>소재지</label><input id="f_addr" value="서울특별시 강남구 테헤란로 123"></div>
+        <div class="field"><label>사업자등록번호</label><input id="f_biz" value="123-45-67890" placeholder="000-00-00000" inputmode="numeric"><div class="msg" id="m_biz"></div></div>
+        <div class="field"><label>대표자</label><input id="f_ceo" value="대성에셋(주)"></div>
+        <div class="field"><label>관리소 연락처</label><input id="f_tel" value="02-555-1234" inputmode="numeric" placeholder="02-000-0000"></div>
+        <div class="field"><label>회계 표준</label>
+          <select id="f_acct"><option>일반(집합건물)</option><option>공동주택회계</option><option>국토부(K-APT)</option><option>서울시</option></select></div>
+      </div>
+        <!-- 수납 우선순위: V2 화면에서는 뺌 — 값은 그대로 보관(수납 모듈 기본값) -->
+        <div style="display:none"><select id="f_lateType"><option value="normal">일반 연체료</option><option value="daily">연체료 일할</option></select><select id="f_alloc"></select><span id="saveHint"></span></div>
+      </div>
+      <div class="dlg-f"><button class="btn gray sm" id="btnResetInfo" disabled>변경 취소</button><span style="flex:1"></span><button class="btn gray" id="btnCloseBld">닫기</button><button class="btn" id="btnSaveInfo" disabled>저장</button></div>
+    </dialog>
+  </section>
+
+  <!-- ② 동호 생성 -->
+  <section class="page" id="units">
+    <div class="kpis" id="uKpis"></div>
+    <div class="addrow">
+      <div class="fld"><small>동</small><input id="a_dong" value="본관" style="width:64px"></div>
+      <div class="fld"><small>호 *</small><input id="a_ho" placeholder="601" style="width:70px"></div>
+      <div class="fld"><small>상호/입주자</small><input id="a_name" placeholder="(공실)" style="width:130px"></div>
+      <div class="fld"><small>용도</small>
+        <select id="a_use"><option>근린생활</option><option>사무실</option><option>창고</option><option>주거</option><option>기타</option></select></div>
+      <div class="fld"><small>전용면적(㎡)</small><input id="a_area" type="number" min="0" step="0.01" value="25" style="width:90px;text-align:right"></div>
+      <div class="fld"><small>호구분</small>
+        <select id="a_kind"><option value="일반">일반</option><option value="공동">공동(면적0)</option></select></div>
+      <button class="btn" id="btnAddUnit">+ 추가</button>
+    </div>
+    <div class="toolbar">
+      <input class="search" id="uSearch" placeholder="호실·상호 검색">
+      <div class="seg" id="uFilter">
+        <span class="on" data-f="all">전체</span><span data-f="임대">임대</span><span data-f="공실">공실</span><span data-f="공동">공동</span>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn gray sm" id="btnExcel">엑셀 자료 올리기</button>
+    </div>
+    <div class="gridbox">
+      <table>
+        <thead><tr>
+          <th>동</th>
+          <th class="sortable" data-sort="ho">호<span class="arw" data-arw="ho"></span></th>
+          <th class="left">상호/입주자</th><th>용도</th>
+          <th class="sortable" data-sort="area">전용면적(㎡)<span class="arw" data-arw="area"></span></th>
+          <th>호구분</th><th>임대상태</th><th>출력동호</th><th></th>
+        </tr></thead>
+        <tbody id="uRows"></tbody>
+        <tfoot id="uFoot"></tfoot>
+      </table>
+    </div>
+    <p class="hint">※ 동호·면적은 관리비 부과(면적단가·안분)와 검침의 기준이 됩니다. 셀을 클릭해 바로 수정할 수 있습니다.</p>
+  </section>
+
+  <!-- ③ 입주자단체 -->
+  <section class="page" id="org">
+    <div class="subrow">
+      <div class="card">
+        <h3>단체 목록</h3>
+        <div id="orgList"></div>
+        <div style="display:flex;gap:6px;margin-top:10px">
+          <input id="a_org" placeholder="단체명 입력" style="flex:1;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px">
+          <button class="btn gray sm" id="btnAddOrg">+ 등록</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>임원 명단 <span class="hint" id="orgSel" style="margin:0"></span></h3>
+        <div class="gridbox" style="border:0">
+          <table>
+            <thead><tr><th>직책</th><th class="left">성명</th><th>호실</th><th>임기</th><th>연락처</th><th></th></tr></thead>
+            <tbody id="memRows"></tbody>
+          </table>
+        </div>
+        <div class="addrow" style="margin-top:12px">
+          <div class="fld"><small>직책</small>
+            <select id="a_pos"><option>회장</option><option>대표</option><option>부회장</option><option>감사</option><option>총무</option><option>이사</option><option>위원</option><option>기타</option></select></div>
+          <div class="fld"><small>성명 *</small><input id="a_mname" placeholder="성명" style="width:90px"></div>
+          <div class="fld"><small>호실</small><input id="a_mho" placeholder="401" style="width:64px"></div>
+          <div class="fld"><small>임기</small><input id="a_mterm" value="2026-01 ~ 2027-12" style="width:150px"></div>
+          <div class="fld"><small>연락처</small><input id="a_mtel" placeholder="010-0000-0000" style="width:120px"></div>
+          <button class="btn" id="btnAddMem">+ 추가</button>
+        </div>
+      </div>
+    </div>
+    <p class="hint">입주자대표회의·관리단 등 단체와 임원(직책·임기)을 관리합니다. (알림톡 일정 안내 연계 가능)</p>
+  </section>
+
+  <!-- ④ 세대 검침환경 -->
+  <section class="page" id="meter">
+    <div class="toolbar">
+      <span class="hint" style="margin:0" id="meterSummary"></span>
+      <div class="spacer"></div>
+      <button class="btn sm" id="btnSaveMeter">검침환경 저장</button>
+    </div>
+    <div class="gridbox">
+      <table>
+        <thead><tr>
+          <th>동</th><th>호</th><th class="left">상호</th>
+          <th>전기 <input type="checkbox" id="allElec" checked></th><th>전기 자리수</th><th>전기 조견표</th>
+          <th>수도 <input type="checkbox" id="allWater" checked></th><th>수도 자리수</th><th>수도 조견표</th>
+        </tr></thead>
+        <tbody id="mRows"></tbody>
+      </table>
+    </div>
+    <p class="hint">건물 공통 규칙은 [검침 &gt; 검침 기본설정]에서 정하고, 여기서는 <b>세대별 대상·예외</b>만 지정합니다. 체크된 세대만 검침 입력화면에 표시됩니다. 계량기 자리수 <b>0 = 검침 기본설정 값 적용</b>. 조견표 <b>'기본' = 검침 기본설정의 산정기준을 따름</b>, 세대별로 변경 시 해당 세대만 다른 조견표(요금기준)로 계산됩니다.</p>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<dialog id="editDlg">
+  <div class="dlg-h">동호 수정 <span id="editTitle" style="color:var(--sub);font-weight:400;font-size:12px"></span></div>
+  <div class="dlg-b">
+    <div class="erow">
+      <div class="efld"><label>동</label><input id="e_dong"></div>
+      <div class="efld"><label>호 <span class="req">*</span></label><input id="e_ho"></div>
+    </div>
+    <div class="efld"><label>상호/입주자</label><input id="e_name"></div>
+    <div class="erow">
+      <div class="efld"><label>용도</label><input id="e_use"></div>
+      <div class="efld"><label>전용면적(㎡)</label><input id="e_area" type="number" min="0" step="0.01"></div>
+    </div>
+    <div class="erow">
+      <div class="efld"><label>호구분</label><select id="e_kind"><option>일반</option><option>공동</option></select></div>
+      <div class="efld"><label>임대상태</label><select id="e_status"><option>임대</option><option>공실</option><option>수리</option><option>-</option></select></div>
+    </div>
+    <div class="efld"><label>출력동호</label><input id="e_out" placeholder="미지정 시 호 그대로"></div>
+    <div class="msg" id="e_msg"></div>
+  </div>
+  <div class="dlg-f">
+    <button class="btn gray" id="e_cancel">취소</button>
+    <button class="btn" id="e_save">저장</button>
+  </div>
+</dialog>
+
+<script>
+/* =========================================================
+   BuildOne 단지관리 — UI/UX 개선판
+========================================================= */
+const won=n=>Math.round(n).toLocaleString();
+
+// 마스터 호실 데이터 (전 모듈 공유 기준)
+let UNITS=[
+  {dong:'본관',ho:'101',name:'GS25',      use:'근린생활', area:33.0, kind:'일반', status:'임대', out:'', elec:true, water:true, eDigit:5, wDigit:4},
+  {dong:'본관',ho:'108',name:'만나커피',  use:'근린생활', area:28.0, kind:'일반', status:'임대', out:'', elec:true, water:true, eDigit:5, wDigit:4},
+  {dong:'본관',ho:'205',name:'김밥천국',  use:'근린생활', area:25.0, kind:'일반', status:'임대', out:'', elec:true, water:true, eDigit:5, wDigit:4},
+  {dong:'본관',ho:'302',name:'한빛문구',  use:'사무실',   area:22.0, kind:'일반', status:'임대', out:'', elec:true, water:true, eDigit:5, wDigit:4},
+  {dong:'본관',ho:'401',name:'우리법률',  use:'사무실',   area:30.0, kind:'일반', status:'임대', out:'', elec:true, water:true, eDigit:5, wDigit:4},
+  {dong:'본관',ho:'501',name:'서울세무',  use:'사무실',   area:27.0, kind:'일반', status:'임대', out:'', elec:true, water:true, eDigit:5, wDigit:4},
+  {dong:'본관',ho:'B01',name:'(공실)',    use:'창고',     area:20.0, kind:'일반', status:'공실', out:'', elec:true, water:false,eDigit:5, wDigit:4},
+  {dong:'공용',ho:'M01',name:'관리사무소',use:'관리',     area:0,    kind:'공동', status:'-',   out:'', elec:true, water:true, eDigit:5, wDigit:4},
+];
+let ORGS=[
+  {id:'o1', name:'관리단(입주자대표)', members:[
+    {pos:'대표', name:'홍길동', ho:'401', term:'2025-03 ~ 2027-02', tel:'010-1111-2222'},
+    {pos:'감사', name:'김철수', ho:'205', term:'2025-03 ~ 2027-02', tel:'010-3333-4444'},
+  ]},
+  {id:'o2', name:'상가번영회', members:[
+    {pos:'회장', name:'이영희', ho:'101', term:'2026-01 ~ 2027-12', tel:'010-5555-6666'},
+  ]},
+];
+let curOrg='o1', editingOrgId=null;
+const ALLOC={
+  normal:[['principal','부과액 우선'],['late','연체료 우선'],['ratio','비율']],
+  daily:[['principal','부과액 우선'],['late','연체료 우선'],['sum','합계액 우선']],
+};
+const STATUS_OPT=['임대','공실','수리','-'];
+const POS_RANK={'회장':0,'대표':1,'부회장':2,'감사':3,'총무':4,'이사':5,'위원':6};   // 직책 높은 순: 회장→대표→부회장→감사→총무→이사→위원→기타
+function posRank(p){ return POS_RANK[p]!==undefined?POS_RANK[p]:9; }
+
+function toast(m,type){const t=document.getElementById('toast');t.className='toast show'+(type?' '+type:'');t.textContent=m;clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2400);}
+
+/* ===== 저장/복원 (localStorage) ===== */
+const LS_DATA='buildone_danji_data', LS_BLD='buildone_buildings';
+/* 건물별 데이터 분리: LS_DATA = { <건물코드>: {units, orgs}, ... } */
+const SEED_UNITS_D0517=JSON.parse(JSON.stringify(UNITS));
+const SEED_ORGS_D0517=JSON.parse(JSON.stringify(ORGS));
+function seedFor(key){
+  if(key==='D0517') return {units:JSON.parse(JSON.stringify(SEED_UNITS_D0517)), orgs:JSON.parse(JSON.stringify(SEED_ORGS_D0517))};
+  if(key==='D0662') return {units:[
+    {dong:'A동',ho:'101',name:'커피베이',  use:'근린생활', area:26, kind:'일반', status:'임대', out:'', elec:true, water:true, eDigit:5, wDigit:4},
+    {dong:'A동',ho:'201',name:'구로전자',  use:'사무실',   area:31, kind:'일반', status:'임대', out:'', elec:true, water:true, eDigit:5, wDigit:4},
+    {dong:'A동',ho:'301',name:'(공실)',    use:'사무실',   area:28, kind:'일반', status:'공실', out:'', elec:true, water:false,eDigit:5, wDigit:4},
+    {dong:'공용',ho:'M01',name:'관리사무소',use:'관리',    area:0,  kind:'공동', status:'-',   out:'', elec:true, water:true, eDigit:5, wDigit:4},
+  ], orgs:[{id:'g1',name:'관리단',members:[{pos:'대표',name:'박구로',ho:'201',term:'2026-01 ~ 2027-12',tel:'010-2222-1111'}]}]};
+  return {units:[], orgs:[{id:'n'+Date.now(),name:'관리단',members:[]}]};   // 신규 건물: 빈 상태
+}
+function bldKey(){ return (BUILDINGS[curBld]&&BUILDINGS[curBld].code)||'default'; }
+function readAllData(){ let a={}; try{ a=JSON.parse(localStorage.getItem(LS_DATA))||{}; }catch(e){}
+  if(Array.isArray(a.units)) a={ 'D0517': {units:a.units, orgs:a.orgs||[]} };   // 구버전(전역 1벌) 마이그레이션
+  return a; }
+function saveData(){ try{ const all=readAllData(); all[bldKey()]={units:UNITS, orgs:ORGS}; localStorage.setItem(LS_DATA, JSON.stringify(all)); }catch(e){} }
+function loadBldData(){
+  const d=readAllData()[bldKey()];
+  if(d&&Array.isArray(d.units)){ UNITS=d.units; ORGS=Array.isArray(d.orgs)&&d.orgs.length?d.orgs:[{id:'n'+Date.now(),name:'관리단',members:[]}]; }
+  else { const s=seedFor(bldKey()); UNITS=s.units; ORGS=s.orgs; }
+  curOrg=(ORGS[0]||{}).id; editingOrgId=null; sortUnits();
+}
+
+/* ----- 건물(단지) 목록 : 통합메뉴 상단 드롭다운과 공유(buildone_buildings) ----- */
+const BFIELDS=[['f_name','name'],['f_code','code'],['f_ec','ec'],['f_type','type'],['f_region','region'],['f_addr','addr'],['f_biz','biz'],['f_ceo','ceo'],['f_tel','tel'],['f_acct','acct'],['f_lateType','lateType'],['f_alloc','alloc']];
+let BUILDINGS=[], curBld=0;
+function seedBuildings(){ return [
+  {code:'D0517',name:'대성빌딩',region:'강남',type:'빌딩',ec:'AEG-20517',addr:'서울특별시 강남구 테헤란로 123',biz:'123-45-67890',ceo:'대성에셋(주)',tel:'02-555-1234',acct:'일반(집합건물)',lateType:'normal',alloc:'principal'},
+  {code:'D0662',name:'대성2빌딩',region:'구로',type:'빌딩',ec:'',addr:'서울특별시 구로구 디지털로 300',biz:'',ceo:'대성에셋(주)',tel:'',acct:'일반(집합건물)',lateType:'normal',alloc:'principal'},
+]; }
+function persistBuildings(){ try{ localStorage.setItem(LS_BLD, JSON.stringify(BUILDINGS)); }catch(e){} }
+function loadBuildings(){ let b; try{ b=JSON.parse(localStorage.getItem(LS_BLD)); }catch(e){} if(Array.isArray(b)&&b.length){ BUILDINGS=b; } else { BUILDINGS=seedBuildings(); persistBuildings(); } if(curBld>=BUILDINGS.length)curBld=0; }
+function bldLabel(b){ return b.name+(b.region?' ('+b.region+')':''); }
+function renderBldSel(){ document.getElementById('bldSel').innerHTML=BUILDINGS.map((b,i)=>`<option value="${i}" ${i===curBld?'selected':''}>${bldLabel(b)}</option>`).join(''); renderBldList(); }
+const bEsc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function bldVisible(){ let s=null; try{ s=JSON.parse(localStorage.getItem('buildone_session')||'null'); }catch(e){}
+  const all=BUILDINGS.map((b,i)=>i); if(!s||s.role==='관리자'||!Array.isArray(s.buildings)) return all;
+  return all.filter(i=>s.buildings.includes(BUILDINGS[i].code)); }
+function renderBldList(){ const idx=bldVisible();
+  if(idx.length&&!idx.includes(curBld)){ curBld=idx[0]; loadBldToForm(); loadBldData(); }
+  document.getElementById('bldCount').textContent='· '+idx.length+'개';
+  document.getElementById('bldRows').innerHTML=idx.length?idx.map((i,n)=>{ const b=BUILDINGS[i];
+    return `<tr class="${i===curBld?'sel':''}" onclick="openBld(${i})"><td>${n+1}</td><td><b>${bEsc(b.name)}</b></td><td>${bEsc(b.region||'-')}</td><td>${bEsc(b.code)}</td><td>${bEsc(b.type||'-')}</td><td>${bEsc(b.addr||'-')}</td><td>${bEsc(b.ceo||'-')}</td><td>${bEsc(b.tel||'-')}</td><td class="bldDelTd"><button class="btn danger sm bldDel" onclick="event.stopPropagation();delBldAt(${i})">삭제</button></td></tr>`; }).join('')
+    :'<tr><td colspan="9" style="text-align:center;color:#6b727c;padding:18px">접근할 수 있는 건물이 없습니다 — [사용자 · 권한] > 접근 건물에서 지정합니다</td></tr>';
+  document.querySelectorAll('#info > .card:not(#bldListCard)').forEach(c=>c.style.display=idx.length?'':'none'); }
+function loadBldToForm(){ const b=BUILDINGS[curBld]||{};
+  document.getElementById('f_lateType').value=b.lateType||'normal'; fillAlloc();
+  BFIELDS.forEach(([id,key])=>{ if(id==='f_lateType')return; const el=document.getElementById(id); if(el)el.value=(b[key]!==undefined?b[key]:''); });
+  validateInfo(); infoSnapshot=snapshotInfo(); setDirty(false);
+}
+function formToBld(){ const b=BUILDINGS[curBld]; if(!b)return; BFIELDS.forEach(([id,key])=>{ const el=document.getElementById(id); if(el)b[key]=el.value; }); }
+function switchBld(i){ if(infoDirty && !confirm('저장하지 않은 변경이 있습니다. 이동하면 사라집니다. 계속할까요?')){ renderBldSel(); return; } curBld=i; localStorage.setItem('buildone_current_building', i); loadBldToForm(); loadBldData(); renderAll(); renderBldList(); }
+function applyCurrentBuilding(i){ if(!isNaN(i) && i>=0 && i<BUILDINGS.length && i!==curBld){ curBld=i; renderBldSel(); loadBldToForm(); loadBldData(); renderAll(); } }   // 외부(통합메뉴)에서 전환 — 저장은 하지 않음(에코 방지)
+function loadCurrentBuilding(){ const i=parseInt(localStorage.getItem('buildone_current_building')); if(!isNaN(i)&&i>=0&&i<BUILDINGS.length) curBld=i; }
+window.setCurrentBuilding=applyCurrentBuilding;   // 부모(통합메뉴)가 직접 호출 가능
+function newBuilding(){ BUILDINGS.push({code:'N'+String(Date.now()).slice(-4),name:'새 건물 '+(BUILDINGS.length+1),region:'',type:'빌딩',ec:'',addr:'',biz:'',ceo:'',tel:'',acct:'일반(집합건물)',lateType:'normal',alloc:'principal'}); curBld=BUILDINGS.length-1; localStorage.setItem('buildone_current_building',curBld); persistBuildings(); renderBldSel(); loadBldToForm(); loadBldData(); renderAll(); const nm=document.getElementById('f_name'); nm.focus(); nm.select(); toast('새 건물 추가 — 정보 입력 후 저장하세요 (동호는 ② 탭에서 등록)','ok'); }
+function delBuilding(){ if(BUILDINGS.length<=1){ toast('최소 1개 건물은 있어야 합니다','bad'); return; } if(!confirm(bldLabel(BUILDINGS[curBld])+' 건물을 삭제할까요?\n이 건물의 동호·단체·검침환경 데이터도 함께 삭제됩니다.'))return;
+  try{ const all=readAllData(); delete all[bldKey()]; localStorage.setItem(LS_DATA, JSON.stringify(all)); }catch(e){}
+  BUILDINGS.splice(curBld,1); curBld=0; localStorage.setItem('buildone_current_building',0); persistBuildings(); renderBldSel(); loadBldToForm(); loadBldData(); renderAll(); toast('건물 삭제','warn'); }
+
+function resetDanji(){ if(confirm('입력한 내용을 모두 지우고 기본값으로 되돌릴까요?')){ localStorage.removeItem(LS_DATA); localStorage.removeItem(LS_BLD); location.reload(); } }
+
+/* ===== ① 단지정보 (변경감지 저장) ===== */
+let infoDirty=false, infoSnapshot={};
+const INFO_IDS=['f_name','f_ec','f_type','f_region','f_addr','f_biz','f_ceo','f_tel','f_acct','f_lateType','f_alloc'];
+function fillAlloc(){
+  const t=document.getElementById('f_lateType').value;
+  document.getElementById('f_alloc').innerHTML=ALLOC[t].map(a=>`<option value="${a[0]}">${a[1]}</option>`).join('');
+}
+function snapshotInfo(){ const s={}; INFO_IDS.forEach(id=>s[id]=document.getElementById(id).value); return s; }
+function setDirty(on){
+  infoDirty=on;
+  document.getElementById('dirty').classList.toggle('show',on);
+  document.getElementById('btnSaveInfo').disabled=!on;
+  document.getElementById('btnResetInfo').disabled=!on;
+}
+function formatBiz(v){ const d=v.replace(/[^0-9]/g,'').slice(0,10); if(d.length<4)return d; if(d.length<6)return d.slice(0,3)+'-'+d.slice(3); return d.slice(0,3)+'-'+d.slice(3,5)+'-'+d.slice(5); }
+function formatPhone(v){
+  const d=v.replace(/[^0-9]/g,'').slice(0,11);
+  if(/^1[5-9]/.test(d)) return d.length<=4?d:(d.slice(0,4)+'-'+d.slice(4,8));   // 대표번호 1588-0000
+  if(d.startsWith('02')){                                                        // 서울(지역번호 2자리)
+    if(d.length<=2) return d;
+    if(d.length<=5) return '02-'+d.slice(2);
+    if(d.length<=9) return '02-'+d.slice(2,5)+'-'+d.slice(5);                     // 02-000-0000
+    return '02-'+d.slice(2,6)+'-'+d.slice(6,10);                                  // 02-0000-0000
+  }
+  if(d.length<=3) return d;                                                       // 그 외 지역/휴대폰(3자리)
+  if(d.length<=7) return d.slice(0,3)+'-'+d.slice(3);
+  if(d.length<=10) return d.slice(0,3)+'-'+d.slice(3,6)+'-'+d.slice(6);           // 031-000-0000
+  return d.slice(0,3)+'-'+d.slice(3,7)+'-'+d.slice(7,11);                         // 010-0000-0000
+}
+function validateInfo(){
+  let ok=true;
+  const name=document.getElementById('f_name');
+  const nameErr=!name.value.trim();
+  name.classList.toggle('err',nameErr); document.getElementById('m_name').textContent=nameErr?'건물명은 필수입니다':''; if(nameErr)ok=false;
+  const biz=document.getElementById('f_biz');
+  const bizErr=biz.value.trim()!=='' && !/^\d{3}-\d{2}-\d{5}$/.test(biz.value.trim());
+  biz.classList.toggle('err',bizErr); document.getElementById('m_biz').textContent=bizErr?'형식: 000-00-00000':''; if(bizErr)ok=false;
+  return ok;
+}
+function saveInfo(){
+  if(!validateInfo()){ toast('입력값을 확인하세요','bad'); return; }
+  formToBld(); persistBuildings(); renderBldSel();
+  infoSnapshot=snapshotInfo(); setDirty(false);
+  document.getElementById('saveHint').textContent='최근 저장: 방금';
+  toast('건물정보 저장 완료 (통합메뉴 목록 반영)','ok');
+}
+function resetInfo(){ INFO_IDS.forEach(id=>{ if(id==='f_alloc')fillAlloc(); document.getElementById(id).value=infoSnapshot[id]; }); validateInfo(); setDirty(false); toast('변경 취소됨'); }
+
+/* ===== ② 동호 생성 ===== */
+let uSearch='', uFilter='all', uSort={key:null,dir:1};
+function viewUnits(){
+  let list=UNITS.map((u,idx)=>({u,idx}));
+  if(uSearch){ const q=uSearch.toLowerCase(); list=list.filter(x=>(x.u.ho+' '+x.u.name).toLowerCase().includes(q)); }
+  if(uFilter==='임대') list=list.filter(x=>x.u.status==='임대');
+  else if(uFilter==='공실') list=list.filter(x=>x.u.status==='공실');
+  else if(uFilter==='공동') list=list.filter(x=>x.u.kind==='공동');
+  if(uSort.key){ list.sort((a,b)=>{ const k=uSort.key; if(k==='area')return (a.u.area-b.u.area)*uSort.dir; return String(a.u[k]).localeCompare(String(b.u[k]),'ko')*uSort.dir; }); }
+  return list;
+}
+function statusChip(s){ return s==='임대'?'<span class="chip lease">임대</span>':s==='공실'?'<span class="chip vacant">공실</span>':s==='수리'?'<span class="chip warn" style="background:#fff4e6;color:#c05">수리</span>':'<span class="chip">-</span>'; }
+function sortUnits(){
+  UNITS.sort((a,b)=>{
+    const ka=a.kind==='공동'?1:0, kb=b.kind==='공동'?1:0;
+    if(ka!==kb) return ka-kb;                                        // 공동동호는 항상 마지막
+    const dc=String(a.dong).localeCompare(String(b.dong),'ko',{numeric:true});
+    if(dc!==0) return dc;                                            // 동 순
+    return String(a.ho).localeCompare(String(b.ho),'ko',{numeric:true});  // 호 숫자 순
+  });
+}
+function renderUnits(){
+  const list=viewUnits();
+  const tb=document.getElementById('uRows');
+  tb.innerHTML=list.length? list.map(({u,idx})=>`<tr>
+    <td>${u.dong}</td><td>${u.ho}</td>
+    <td class="left"><input class="g" data-i="${idx}" data-f="name" value="${(u.name||'').replace(/"/g,'&quot;')}"></td>
+    <td><input class="g" style="text-align:center" data-i="${idx}" data-f="use" value="${(u.use||'').replace(/"/g,'&quot;')}"></td>
+    <td><input class="g num" data-i="${idx}" data-f="area" type="number" min="0" step="0.01" value="${u.area}"></td>
+    <td><select class="g" data-i="${idx}" data-f="kind"><option ${u.kind==='일반'?'selected':''}>일반</option><option ${u.kind==='공동'?'selected':''}>공동</option></select></td>
+    <td><select class="g" data-i="${idx}" data-f="status">${STATUS_OPT.map(s=>`<option ${u.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
+    <td><input class="g" style="text-align:center" data-i="${idx}" data-f="out" value="${u.out}" placeholder="${u.ho}"></td>
+    <td><button class="btn ghost sm" onclick="editUnit(${idx})">수정</button> <button class="btn danger sm" onclick="delUnit(${idx})">삭제</button></td></tr>`).join('')
+    : `<tr><td colspan="9" class="empty">${uSearch||uFilter!=='all'?'조건에 맞는 동호가 없습니다.':'등록된 동호가 없습니다.'}</td></tr>`;
+  // 편집 이벤트
+  tb.querySelectorAll('input.g').forEach(el=>el.addEventListener('input',e=>{
+    const i=+e.target.dataset.i, f=e.target.dataset.f;
+    UNITS[i][f]= f==='area'?(parseFloat(e.target.value)||0):e.target.value;
+    if(f==='area') renderKpis();
+    saveData();
+  }));
+  tb.querySelectorAll('select.g').forEach(el=>el.addEventListener('change',e=>{
+    const i=+e.target.dataset.i, f=e.target.dataset.f;
+    UNITS[i][f]=e.target.value;
+    if(f==='kind'&&e.target.value==='공동'){ UNITS[i].area=0; UNITS[i].status='-'; }
+    renderUnits();
+  }));
+  renderKpis(); renderArrows(); saveData();
+}
+function renderArrows(){
+  document.querySelectorAll('[data-arw]').forEach(a=>a.textContent = (uSort.key===a.dataset.arw)?(uSort.dir>0?'▲':'▼'):'');
+}
+function renderKpis(){
+  const totalArea=UNITS.filter(u=>u.kind==='일반').reduce((s,u)=>s+u.area,0);
+  const lease=UNITS.filter(u=>u.status==='임대').length;
+  const vac=UNITS.filter(u=>u.status==='공실').length;
+  document.getElementById('uKpis').innerHTML=[
+    ['총 호실',UNITS.length+'실'],['전용면적 합',won(totalArea)+' ㎡'],
+    ['임대 / 공실',lease+' / '+vac],['공동동호',UNITS.filter(u=>u.kind==='공동').length+'실'],
+  ].map(k=>`<div class="kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div></div>`).join('');
+  document.getElementById('uFoot').innerHTML=`<tr><td colspan="4">합계 (${UNITS.length}실)</td><td class="num">${won(totalArea)}</td><td colspan="4"></td></tr>`;
+}
+function delUnit(i){ if(confirm(UNITS[i].ho+'호를 삭제하시겠습니까?\n관련 부과·수납 정보도 함께 삭제됩니다.')){ UNITS.splice(i,1); renderAll(); toast('동호 삭제','warn'); } }
+function addUnit(){
+  const dong=document.getElementById('a_dong').value.trim()||'본관';
+  const ho=document.getElementById('a_ho').value.trim();
+  if(!ho){ toast('호를 입력하세요','bad'); document.getElementById('a_ho').focus(); return; }
+  if(UNITS.some(u=>u.dong===dong&&u.ho===ho)){ toast(`${dong} ${ho}호가 이미 있습니다`,'bad'); return; }
+  const kind=document.getElementById('a_kind').value;
+  UNITS.push({dong,ho,name:document.getElementById('a_name').value.trim()||'(공실)',use:document.getElementById('a_use').value,
+    area:kind==='공동'?0:(parseFloat(document.getElementById('a_area').value)||0),kind,
+    status:kind==='공동'?'-':'공실',out:'',elec:true,water:kind!=='공동',eDigit:5,wDigit:4});
+  document.getElementById('a_ho').value=''; document.getElementById('a_name').value='';
+  sortUnits(); renderAll(); toast(`${ho}호 추가`,'ok'); document.getElementById('a_ho').focus();
+}
+let editIdx=-1;
+function editUnit(i){
+  editIdx=i; const u=UNITS[i]; if(!u)return;
+  document.getElementById('editTitle').textContent='· 현재 '+u.dong+' '+u.ho+'호';
+  document.getElementById('e_dong').value=u.dong;
+  document.getElementById('e_ho').value=u.ho;
+  document.getElementById('e_name').value=u.name;
+  document.getElementById('e_use').value=u.use;
+  document.getElementById('e_area').value=u.area;
+  document.getElementById('e_kind').value=u.kind;
+  document.getElementById('e_status').value=u.status;
+  document.getElementById('e_out').value=u.out;
+  document.getElementById('e_msg').textContent='';
+  document.getElementById('editDlg').showModal();
+  document.getElementById('e_ho').focus();
+}
+function saveEditUnit(){
+  const dong=document.getElementById('e_dong').value.trim()||'본관';
+  const ho=document.getElementById('e_ho').value.trim();
+  const msg=document.getElementById('e_msg');
+  if(!ho){ msg.textContent='호를 입력하세요'; return; }
+  if(UNITS.some((u,idx)=>idx!==editIdx && u.dong===dong && u.ho===ho)){ msg.textContent=`${dong} ${ho}호가 이미 존재합니다`; return; }
+  const u=UNITS[editIdx]; const kind=document.getElementById('e_kind').value;
+  u.dong=dong; u.ho=ho;
+  u.name=document.getElementById('e_name').value.trim()||'(공실)';
+  u.use=document.getElementById('e_use').value.trim();
+  u.kind=kind;
+  u.area=kind==='공동'?0:(parseFloat(document.getElementById('e_area').value)||0);
+  u.status=kind==='공동'?'-':document.getElementById('e_status').value;
+  u.out=document.getElementById('e_out').value.trim();
+  sortUnits(); saveData(); renderUnits();
+  document.getElementById('editDlg').close();
+  toast(ho+'호 수정 완료','ok');
+}
+
+/* ===== ③ 입주자단체 ===== */
+function renderOrgList(){
+  document.getElementById('orgList').innerHTML=ORGS.map(o=>{
+    if(o.id===editingOrgId)
+      return `<div class="orgitem on"><input class="orgname" id="editOrgInput" value="${(o.name||'').replace(/"/g,'&quot;')}"><button class="btn sm" onclick="commitOrgName()">확인</button></div>`;
+    return `<div class="orgitem ${o.id===curOrg?'on':''}">
+      <span style="flex:1;cursor:pointer" onclick="selOrg('${o.id}')">${o.name}</span>
+      <span class="chip">${o.members.length}명</span>
+      <button class="btn ghost sm" onclick="startEditOrg('${o.id}')">수정</button>
+      <button class="btn danger sm" onclick="delOrg('${o.id}')">삭제</button></div>`;
+  }).join('');
+  const inp=document.getElementById('editOrgInput');
+  if(inp){ inp.focus(); inp.select(); inp.addEventListener('keydown',e=>{ if(e.key==='Enter')commitOrgName(); else if(e.key==='Escape'){editingOrgId=null;renderOrgList();} }); }
+  saveData();
+}
+function startEditOrg(id){ editingOrgId=id; renderOrgList(); }
+function commitOrgName(){ const inp=document.getElementById('editOrgInput'); const o=ORGS.find(x=>x.id===editingOrgId); if(o&&inp&&inp.value.trim()) o.name=inp.value.trim(); editingOrgId=null; renderOrgList(); toast('단체명 수정','ok'); }
+function delOrg(id){ if(ORGS.length<=1){ toast('최소 1개 단체는 있어야 합니다','bad'); return; } if(!confirm('이 단체를 삭제할까요? 소속 임원도 함께 삭제됩니다.'))return; ORGS=ORGS.filter(x=>x.id!==id); if(curOrg===id)curOrg=ORGS[0].id; renderOrgList(); renderMembers(); toast('단체 삭제','warn'); }
+function selOrg(id){ curOrg=id; renderOrgList(); renderMembers(); }
+function renderMembers(){
+  const o=ORGS.find(x=>x.id===curOrg); document.getElementById('orgSel').textContent=o?'· '+o.name:'';
+  if(o) o.members.sort((a,b)=>posRank(a.pos)-posRank(b.pos));   // 직책 높은 순 자동 정렬
+  document.getElementById('memRows').innerHTML=(o&&o.members.length)?o.members.map((m,i)=>`<tr>
+    <td><select class="g" data-i="${i}" data-f="pos">${['회장','대표','부회장','감사','총무','이사','위원','기타'].map(p=>`<option ${m.pos===p?'selected':''}>${p}</option>`).join('')}</select></td>
+    <td class="left"><input class="g" data-i="${i}" data-f="name" value="${(m.name||'').replace(/"/g,'&quot;')}"></td>
+    <td><input class="g" style="text-align:center;width:60px" data-i="${i}" data-f="ho" value="${m.ho}"></td>
+    <td><input class="g" style="text-align:center" data-i="${i}" data-f="term" value="${m.term}"></td>
+    <td><input class="g" style="text-align:center" data-i="${i}" data-f="tel" value="${formatPhone(m.tel)}"></td>
+    <td><button class="btn danger sm" onclick="delMem(${i})">삭제</button></td></tr>`).join('')
+    : `<tr><td colspan="6" class="empty">임원이 없습니다. 아래에서 추가하세요.</td></tr>`;
+  document.querySelectorAll('#memRows .g').forEach(el=>el.addEventListener('input',e=>{
+    const f=e.target.dataset.f; if(f==='tel') e.target.value=formatPhone(e.target.value);
+    ORGS.find(x=>x.id===curOrg).members[+e.target.dataset.i][f]=e.target.value;
+    saveData();
+  }));
+  document.querySelectorAll('#memRows select.g').forEach(el=>el.addEventListener('change',e=>{
+    ORGS.find(x=>x.id===curOrg).members[+e.target.dataset.i].pos=e.target.value;
+    saveData(); renderMembers();
+  }));
+}
+function delMem(i){ ORGS.find(x=>x.id===curOrg).members.splice(i,1); renderMembers(); renderOrgList(); toast('임원 삭제','warn'); }
+function addOrg(){ const el=document.getElementById('a_org'); const nm=el.value.trim(); if(!nm){toast('단체명을 입력하세요','bad');return;} ORGS.push({id:'o'+Date.now(),name:nm,members:[]}); el.value=''; renderOrgList(); toast('단체 등록','ok'); }
+function addMem(){
+  const o=ORGS.find(x=>x.id===curOrg); if(!o){toast('먼저 단체를 선택하세요','bad');return;}
+  const name=document.getElementById('a_mname').value.trim(); if(!name){toast('성명을 입력하세요','bad');document.getElementById('a_mname').focus();return;}
+  o.members.push({pos:document.getElementById('a_pos').value,name,ho:document.getElementById('a_mho').value.trim(),
+    term:document.getElementById('a_mterm').value.trim(),tel:document.getElementById('a_mtel').value.trim()});
+  document.getElementById('a_mname').value=''; document.getElementById('a_mho').value=''; document.getElementById('a_mtel').value='';
+  renderMembers(); renderOrgList(); toast('임원 추가','ok'); document.getElementById('a_mname').focus();
+}
+
+/* ===== ④ 세대 검침환경 ===== */
+const ETABLES=['','저압','고압','별도','개별','일반용'];   // 세대별 전기 조견표 (''=기본: 검침환경 따름)
+const WTABLES=['','조견표','단가'];                        // 세대별 수도 요금기준
+const tableSel=(i,f,list,cur)=>`<select class="g" data-i="${i}" data-f="${f}">${list.map(o=>`<option value="${o}" ${o===(cur||'')?'selected':''}>${o||'기본'}</option>`).join('')}</select>`;
+function renderMeter(){
+  document.getElementById('mRows').innerHTML=UNITS.map((u,i)=>`<tr>
+    <td>${u.dong}</td><td>${u.ho}</td><td class="left">${u.name}</td>
+    <td><input type="checkbox" data-i="${i}" data-f="elec" ${u.elec?'checked':''}></td>
+    <td><input class="g num" style="width:60px" data-i="${i}" data-f="eDigit" type="number" min="0" value="${u.eDigit}"></td>
+    <td>${tableSel(i,'eTable',ETABLES,u.eTable)}</td>
+    <td><input type="checkbox" data-i="${i}" data-f="water" ${u.water?'checked':''}></td>
+    <td><input class="g num" style="width:60px" data-i="${i}" data-f="wDigit" type="number" min="0" value="${u.wDigit}"></td>
+    <td>${tableSel(i,'wTable',WTABLES,u.wTable)}</td></tr>`).join('');
+  document.querySelectorAll('#mRows [data-f]').forEach(el=>el.addEventListener('change',e=>{
+    const i=+e.target.dataset.i, f=e.target.dataset.f;
+    UNITS[i][f]=(f==='elec'||f==='water')?e.target.checked
+      :(f==='eTable'||f==='wTable')?e.target.value
+      :(parseInt(e.target.value)||0);
+    if(f==='elec'||f==='water') meterSummary();
+    saveData();
+  }));
+  meterSummary(); saveData();
+}
+function meterSummary(){
+  const e=UNITS.filter(u=>u.elec).length, w=UNITS.filter(u=>u.water).length, n=UNITS.length;
+  document.getElementById('meterSummary').textContent=`전기 적용 ${e}/${n} · 수도 적용 ${w}/${n} 세대`;
+  document.getElementById('allElec').checked=e===n; document.getElementById('allWater').checked=w===n;
+}
+
+/* ===== 공통 ===== */
+function renderAll(){ renderUnits(); renderOrgList(); renderMembers(); renderMeter(); }
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id===b.dataset.t));
+}));
+function activateTabFromHash(){ const btn=document.querySelector('.tabs button[data-t="info"]'); if(btn)btn.click(); }   /* V2: 건물정보만 */
+window.addEventListener('hashchange', activateTabFromHash);
+// 단지정보 이벤트
+/* 숫자 칸 서식(하이픈)을 넣어도 커서 자리 유지 */
+function fmtKeepCaret(el,fmt){ const pos=el.selectionStart||0, before=el.value.slice(0,pos).replace(/[^0-9]/g,'').length; el.value=fmt(el.value);
+  let n=0,i=0; while(i<el.value.length&&n<before){ if(/[0-9]/.test(el.value[i]))n++; i++; } try{ el.setSelectionRange(i,i); }catch(e){} }
+/* 변경 여부 = 처음(또는 마지막 저장) 값과 다른지 — 되돌려 쓰면 '변경 없음'으로 */
+function refreshDirty(){ setDirty(INFO_IDS.some(k=>document.getElementById(k).value!==infoSnapshot[k])); }
+INFO_IDS.forEach(id=>{ const el=document.getElementById(id); el.addEventListener('input',()=>{ if(id==='f_biz')fmtKeepCaret(el,formatBiz); if(id==='f_tel')fmtKeepCaret(el,formatPhone); validateInfo(); refreshDirty(); }); el.addEventListener('change',refreshDirty); });
+document.getElementById('f_lateType').addEventListener('change',()=>{ fillAlloc(); setDirty(true); });
+document.getElementById('btnSaveInfo').addEventListener('click',saveInfo);
+document.getElementById('btnResetInfo').addEventListener('click',resetInfo);
+document.getElementById('bldSel').addEventListener('change',e=>switchBld(+e.target.value));
+// 동호 이벤트
+document.getElementById('btnAddUnit').addEventListener('click',addUnit);
+['a_ho','a_name','a_area'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')addUnit();}));
+document.getElementById('uSearch').addEventListener('input',e=>{uSearch=e.target.value;renderUnits();});
+document.querySelectorAll('#uFilter span').forEach(s=>s.addEventListener('click',()=>{document.querySelectorAll('#uFilter span').forEach(x=>x.classList.remove('on'));s.classList.add('on');uFilter=s.dataset.f;renderUnits();}));
+document.querySelectorAll('th.sortable').forEach(th=>th.addEventListener('click',()=>{const k=th.dataset.sort; uSort.dir=(uSort.key===k)?-uSort.dir:1; uSort.key=k; renderUnits();}));
+document.getElementById('btnExcel').addEventListener('click',()=>toast('엑셀 동호 자료 업로드(시뮬레이션)'));
+document.getElementById('e_save').addEventListener('click',saveEditUnit);
+document.getElementById('e_cancel').addEventListener('click',()=>document.getElementById('editDlg').close());
+['e_ho','e_area','e_out'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();saveEditUnit();}}));
+// 입주자단체
+document.getElementById('btnAddOrg').addEventListener('click',addOrg);
+document.getElementById('a_org').addEventListener('keydown',e=>{if(e.key==='Enter')addOrg();});
+document.getElementById('btnAddMem').addEventListener('click',addMem);
+['a_mname','a_mho','a_mtel'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')addMem();}));
+document.getElementById('a_mtel').addEventListener('input',e=>{e.target.value=formatPhone(e.target.value);});
+// 검침환경
+document.getElementById('btnSaveMeter').addEventListener('click',()=>toast('세대별 검침대상·예외 저장 완료','ok'));
+document.getElementById('allElec').addEventListener('change',e=>{UNITS.forEach(u=>u.elec=e.target.checked);renderMeter();});
+document.getElementById('allWater').addEventListener('change',e=>{UNITS.forEach(u=>u.water=e.target.checked);renderMeter();});
+document.getElementById('btnResetAll').addEventListener('click',resetDanji);
+
+window.addEventListener('storage', e=>{
+  if(e.key==='buildone_current_building') applyCurrentBuilding(parseInt(e.newValue));
+  else if(e.key==='buildone_buildings'){ loadBuildings(); loadCurrentBuilding(); renderBldSel(); loadBldToForm(); loadBldData(); renderAll(); }
+  else if(e.key==='buildone_danji_data'){ loadBldData(); renderAll(); }   // 입주자 화면의 역반영(상호·전출) 수신
+});
+loadBuildings(); loadCurrentBuilding(); loadBldData(); renderBldSel(); loadBldToForm(); renderAll(); activateTabFromHash();
+</script>
+<script>/* BuildOne 공통 헤더: 글씨 확대 + 사용자 클릭 변경(전 화면 공유) */
+(function(){function init(){
+  /* 가독성 글꼴(Noto Sans KR) + 전체 확대 — 60대+ 사용자 대응 */
+  if(!document.getElementById('bo-font')){var fl=document.createElement('link');fl.id='bo-font';fl.rel='stylesheet';fl.href='https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap';document.head.appendChild(fl);}
+  document.body.style.fontFamily="'Noto Sans KR','Pretendard','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',sans-serif";
+  document.body.style.zoom='1.15';
+  var lg=document.querySelector('header .logo');
+  if(lg){lg.style.fontSize='19px';var sm=lg.querySelector('small');if(sm){sm.style.fontSize='14px';sm.style.color='#c7cfe0';sm.style.marginLeft='8px';}}
+  var w=document.querySelector('.who');
+  if(w){w.style.fontSize='14px';w.style.cursor='pointer';w.title='클릭하여 사용자 변경';
+    var draw=function(){w.textContent=localStorage.getItem('buildone_user')||'김소장 · 관리소장';};draw();
+    w.addEventListener('click',function(){var v=prompt('사용자 표시 (이름 · 직책)',localStorage.getItem('buildone_user')||w.textContent);if(v!==null&&v.trim()){localStorage.setItem('buildone_user',v.trim());draw();}});
+    window.addEventListener('storage',function(e){if(e.key==='buildone_user')draw();});}
+  /* === 전 메뉴 공통: 건물 선택 + 기준일 컨텍스트바 === */
+  if(!document.querySelector('.bo-ctxbar')){var hd=document.querySelector('header');if(hd){
+    var cbar=document.createElement('div');cbar.className='bo-ctxbar';
+    cbar.style.cssText='background:#fff;border-bottom:1px solid #e3e7ed;padding:9px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
+    var blds=[];try{blds=JSON.parse(localStorage.getItem('buildone_buildings'))||[];}catch(e){}
+    if(!blds.length)blds=[{name:'대성빌딩',region:'강남'},{name:'대성2빌딩',region:'구로'}];
+    var cur=parseInt(localStorage.getItem('buildone_current_building'));if(isNaN(cur)||cur<0||cur>=blds.length)cur=0;
+    var opts=blds.map(function(b,i){return '<option value="'+i+'"'+(i===cur?' selected':'')+'>'+b.name+(b.region?' ('+b.region+')':'')+'</option>';}).join('');
+    var today=new Date().toISOString().slice(0,10);
+    cbar.innerHTML='<label style="color:#3d4451;font-weight:600;font-size:13px">건물</label>'
+      +'<select class="bo-bld" style="min-width:200px;border:1px solid #e3e7ed;border-radius:6px;padding:7px 10px;background:#fafbfc;font-size:13px;font-family:inherit">'+opts+'</select>'
+      +'<span style="flex:1"></span>'
+      +'<span style="color:#6b727c;font-size:13px">기준일 <b style="color:#3d4451">'+today+'</b></span>';
+    hd.insertAdjacentElement('afterend',cbar);
+    var bsel=cbar.querySelector('.bo-bld');
+    bsel.addEventListener('change',function(){var i=+bsel.value;localStorage.setItem('buildone_current_building',i);if(window.setCurrentBuilding){try{window.setCurrentBuilding(i);}catch(e){}}});
+    window.addEventListener('storage',function(e){if(e.key==='buildone_current_building'){var i=parseInt(e.newValue);if(!isNaN(i))bsel.value=i;}});
+    var nb=document.getElementById('bldSel');
+    if(nb){nb.style.display='none';var pl=nb.previousElementSibling;if(pl&&/건물|단지/.test(pl.textContent)&&pl.children.length===0)pl.style.display='none';}
+  }}
+  var bump=function(el,min){var s=parseFloat(getComputedStyle(el).fontSize)||0;if(s&&s<min)el.style.fontSize=min+'px';};
+  document.querySelectorAll('.cond,.toolbar').forEach(function(bar){
+    bar.querySelectorAll('label').forEach(function(l){l.style.fontSize='13px';l.style.color='#3d4451';l.style.fontWeight='600';});
+    bar.querySelectorAll('select,input').forEach(function(s){if(s.type!=='checkbox'&&s.type!=='radio'){s.style.fontSize='13px';s.style.padding='7px 10px';}});
+  });
+  /* 표 밖 모든 입력·캡션 가독성(표 안·헤더 제외 → 레이아웃 유지) */
+  document.querySelectorAll('input,select,textarea').forEach(function(el){if(!el.closest('table')&&el.type!=='checkbox'&&el.type!=='radio')bump(el,13);});
+  document.querySelectorAll('body *').forEach(function(el){if(el.children.length===0&&el.textContent&&el.textContent.trim()&&el.tagName!=='SCRIPT'&&el.tagName!=='STYLE'&&!el.closest('table')&&!el.closest('header'))bump(el,12.5);});
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();})();</script>
+<script>/* V2 권한 적용 — 건물관리: 없음이면 차단, 조회면 보기 전용 */
+(function(){ const lv=v2Perm('건물관리'); if(lv==='none'){ v2Deny('건물정보 등록'); return; }
+  if(lv!=='view') return;
+  const st=document.createElement('style'); st.textContent='body.ro #info input,body.ro #info select,body.ro #info textarea{pointer-events:none;background:#f3f4f7!important;color:#555}'
+    +' body.ro #btnNewBld,body.ro .bldDel,body.ro #btnDelBld,body.ro #btnSaveInfo,body.ro #btnResetInfo,body.ro #btnResetAll{display:none!important}'
+    +' body.ro #bldSel{pointer-events:auto!important;background:#fafbfc!important;color:inherit}';
+  document.head.appendChild(st); document.body.classList.add('ro');
+  const b=document.createElement('div'); b.style.cssText='background:#fff7e0;border:1px solid #ead9a0;border-radius:8px;padding:10px 14px;margin:0 0 12px;font-size:13px';
+  b.innerHTML='🔒 <b>조회 권한</b> — 건물정보를 볼 수만 있습니다. 등록 · 수정 · 삭제는 편집 권한이 필요합니다.';
+  const pg=document.getElementById('info'); pg.insertBefore(b,pg.firstChild); })();
+</script>
+<script>/* V2 — 건물 기본정보 팝업 · 새 건물 등록 · 삭제 */
+let dlgNew=null;   /* 새 건물 등록 중이면 그 건물 값 (저장할 때만 목록에 추가) */
+const bldDlg=document.getElementById('bldDlg');
+function fillForm(b){ document.getElementById('f_lateType').value=b.lateType||'normal'; fillAlloc();
+  BFIELDS.forEach(([id,key])=>{ if(id==='f_lateType')return; const el=document.getElementById(id); if(el) el.value=(b[key]!==undefined?b[key]:''); });
+  validateInfo(); infoSnapshot=snapshotInfo(); setDirty(false); }
+window.openBld=function(i){ dlgNew=null; curBld=i; localStorage.setItem('buildone_current_building',i);
+  loadBldToForm(); loadBldData(); renderBldList();
+  document.getElementById('bldDlgTitle').textContent='건물 기본정보 — '+bldLabel(BUILDINGS[i]); bldDlg.showModal(); };
+function openNewBld(){ dlgNew={code:'N'+String(Date.now()).slice(-4),name:'',region:'',type:'빌딩',ec:'',addr:'',biz:'',ceo:'',tel:'',acct:'일반(집합건물)',lateType:'normal',alloc:'principal'};
+  fillForm(dlgNew); document.getElementById('m_name').textContent='';
+  document.getElementById('bldDlgTitle').textContent='새 건물 등록'; bldDlg.showModal(); document.getElementById('f_name').focus(); }
+function closeBldDlg(){ if(infoDirty&&!confirm('저장하지 않은 변경이 있습니다. 닫을까요?')) return;
+  dlgNew=null; loadBldToForm(); bldDlg.close(); }
+/* 새 건물을 만든 사람이 건물 지정 계정이면 그 건물에 접근할 수 있게 */
+function grantNewBld(code){ try{ const s=JSON.parse(localStorage.getItem('buildone_session')||'null'); if(!s||!Array.isArray(s.buildings)) return;
+  s.buildings.push(code); localStorage.setItem('buildone_session',JSON.stringify(s));
+  const us=JSON.parse(localStorage.getItem('buildone_users')||'[]'), u=us.find(x=>x.id===s.id); if(u&&Array.isArray(u.buildings)){ u.buildings.push(code); localStorage.setItem('buildone_users',JSON.stringify(us)); } }catch(e){} }
+function saveBldDlg(){ if(!validateInfo()){ toast('입력값을 확인하세요','bad'); return; }
+  const isNew=!!dlgNew;
+  if(isNew){ BUILDINGS.push(Object.assign({},dlgNew)); curBld=BUILDINGS.length-1; localStorage.setItem('buildone_current_building',curBld); grantNewBld(dlgNew.code); }
+  saveInfo(); dlgNew=null; bldDlg.close(); if(isNew){ loadBldData(); toast('새 건물을 등록했습니다','ok'); } }
+window.delBldAt=function(i){ const b=BUILDINGS[i]; if(!b) return;
+  if(BUILDINGS.length<=1){ toast('최소 1개 건물은 있어야 합니다','bad'); return; }
+  if(!confirm(bldLabel(b)+' 건물을 삭제할까요?\n이 건물의 동호 · 단체 · 검침환경 데이터도 함께 삭제됩니다.')) return;
+  try{ const all=readAllData(); delete all[b.code]; localStorage.setItem(LS_DATA, JSON.stringify(all)); }catch(e){}
+  BUILDINGS.splice(i,1); if(curBld>=BUILDINGS.length||curBld===i) curBld=0; else if(curBld>i) curBld--;
+  localStorage.setItem('buildone_current_building',curBld); persistBuildings(); renderBldSel(); loadBldToForm(); loadBldData(); renderAll(); toast('건물을 삭제했습니다','warn'); };
+document.getElementById('btnNewBld').addEventListener('click',openNewBld);
+document.getElementById('btnCloseBld').addEventListener('click',closeBldDlg);
+bldDlg.addEventListener('cancel',e=>{ e.preventDefault(); closeBldDlg(); });
+/* 저장 버튼은 팝업 저장으로 바꿈 (기존 saveInfo 연결 대신) */
+const sb=document.getElementById('btnSaveInfo'), sb2=sb.cloneNode(true); sb.parentNode.replaceChild(sb2,sb); sb2.addEventListener('click',saveBldDlg);
+</script>
+</body>
+</html>

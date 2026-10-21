@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<script src="common_perm.js?v=1792576637"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BuildOne 2.0 — 로그인</title>
+<link rel="icon" type="image/svg+xml" href="아이콘/favicon.svg">
+<link rel="manifest" href="아이콘/site.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+<style>
+  :root{ --navy:#20283a; --accent:#3b5bdb; --line:#e3e7ed; --ink:#23272f; --sub:#6b727c; }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Noto Sans KR','Malgun Gothic',sans-serif;color:var(--ink);
+    min-height:100vh;display:grid;place-items:center;
+    background:linear-gradient(135deg,#20283a 0%,#2b3550 55%,#3b5bdb 140%);}
+  .card{width:380px;max-width:92vw;background:#fff;border-radius:16px;padding:34px 32px 26px;
+    box-shadow:0 18px 50px rgba(15,23,42,.35);}
+  .brand{display:flex;align-items:center;gap:11px;margin-bottom:6px;}
+  .brand .wm{font-weight:800;font-size:26px;letter-spacing:-.3px;}
+  .brand .wm i{font-style:normal;color:var(--accent);}
+  .brand .v2{font-size:12px;font-weight:800;color:#fff;background:var(--accent);border-radius:6px;padding:2px 7px;margin-left:2px;align-self:center;}
+  .sub{color:var(--sub);font-size:13px;margin:0 0 22px;}
+  label{display:block;font-size:13px;font-weight:600;color:#3a4150;margin:14px 0 6px;}
+  input[type=text],input[type=password]{width:100%;border:1.5px solid var(--line);border-radius:9px;
+    padding:12px 13px;font-size:15px;font-family:inherit;}
+  input:focus{outline:none;border-color:var(--accent);}
+  .btn{width:100%;margin-top:20px;border:0;background:var(--accent);color:#fff;border-radius:9px;
+    padding:13px;font-size:15.5px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .btn:hover{background:#2f4bc4;}
+  .err{background:#fdecea;color:#c0392b;border:1px solid #f5c6cb;border-radius:8px;
+    padding:9px 12px;font-size:13px;margin-top:14px;display:none;}
+  .demo{margin-top:22px;border-top:1px dashed var(--line);padding-top:16px;}
+  .demo .t{font-size:12px;color:var(--sub);margin-bottom:8px;}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;}
+  .chip{border:1px solid var(--line);background:#f7f9fc;border-radius:20px;padding:6px 12px;
+    font-size:12px;cursor:pointer;color:#3a4150;}
+  .chip:hover{border-color:var(--accent);color:var(--accent);}
+  .chip b{color:var(--ink);}
+  .foot{margin-top:18px;font-size:11px;color:#9aa1ac;line-height:1.6;text-align:center;}
+  .signed{text-align:center;}
+  .signed .who{font-size:15px;font-weight:700;margin:6px 0 2px;}
+  .signed .role{font-size:12.5px;color:var(--sub);margin-bottom:16px;}
+  .btn.ghost{background:#fff;color:var(--accent);border:1.5px solid var(--accent);margin-top:10px;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">
+    <svg width="34" height="34" viewBox="0 0 40 40" fill="none">
+      <defs><linearGradient id="g" x1="0" y1="0" x2="40" y2="40"><stop offset="0" stop-color="#5b78ff"/><stop offset="1" stop-color="#3b5bdb"/></linearGradient></defs>
+      <rect x="1.5" y="1.5" width="37" height="37" rx="10" fill="url(#g)"/>
+      <rect x="8" y="22" width="6" height="10" rx="1.5" fill="#fff" opacity=".85"/>
+      <rect x="16.5" y="9" width="7" height="23" rx="2" fill="#fff"/>
+      <rect x="26" y="17" width="6" height="15" rx="1.5" fill="#fff" opacity=".85"/>
+    </svg>
+    <span class="wm">Build<i>One</i></span><span class="v2">2.0</span>
+  </div>
+  <p class="sub">집합건물 통합관리 시스템 · 로그인</p>
+
+  <!-- 로그인 폼 -->
+  <form id="loginForm" autocomplete="off">
+    <label for="uid">아이디</label>
+    <input type="text" id="uid" placeholder="아이디를 입력하세요" autocomplete="username">
+    <label for="upw">비밀번호</label>
+    <input type="password" id="upw" placeholder="비밀번호를 입력하세요" autocomplete="current-password">
+    <div class="err" id="err">아이디 또는 비밀번호가 올바르지 않습니다.</div>
+    <button class="btn" type="submit">로그인</button>
+  </form>
+
+  <!-- 비밀번호 변경 (최초 로그인 강제 / 본인 변경 공용) -->
+  <form id="pwForm" style="display:none" autocomplete="off">
+    <div class="sub" id="pwLead" style="margin:0 0 6px"></div>
+    <label for="npw">새 비밀번호</label>
+    <input type="password" id="npw" placeholder="새 비밀번호 (4자 이상)" autocomplete="new-password">
+    <label for="npw2">새 비밀번호 확인</label>
+    <input type="password" id="npw2" placeholder="한 번 더 입력" autocomplete="new-password">
+    <div class="err" id="pwErr"></div>
+    <button class="btn" type="submit">비밀번호 변경</button>
+    <button class="btn ghost" id="pwCancel" type="button">취소</button>
+  </form>
+
+  <!-- 이미 로그인된 경우 -->
+  <div class="signed" id="signed" style="display:none">
+    <div class="who" id="signedWho"></div>
+    <div class="role" id="signedRole"></div>
+    <button class="btn" id="goApp" type="button">통합메뉴로 이동 ▸</button>
+    <button class="btn ghost" id="changePw" type="button">비밀번호 변경</button>
+    <button class="btn ghost" id="doLogout" type="button">로그아웃</button>
+  </div>
+
+  <div class="demo" id="demoBox">
+    <div class="t">데모 계정 (클릭하면 자동 입력)
+      <a href="#" id="resetDemo" style="float:right;font-size:11px;color:#3b5bdb;text-decoration:none">↻ 목록 새로고침</a>
+    </div>
+    <div class="chips" id="chips"></div>
+  </div>
+  <div class="foot">
+    ※ 프로토타입 목업 인증입니다. 실제 서비스는 서버 인증(JWT) · 권한관리(RBAC) ·<br>비밀번호 암호화(해시) 로 구현됩니다.
+  </div>
+</div>
+
+<script>
+const HOME='01_통합메뉴.html';
+const MINPW=4;
+const $=id=>document.getElementById(id);
+// ---- 데모 계정 시드 (mustChange: 최초 로그인 시 비밀번호 변경 필요) ----
+const USERS_VER='2';   // 계정 구조 개편(2026-10): 9개 직책 + 시스템관리자 — 옛 목록이면 새로 채움
+const SEED_USERS=[
+  {id:'admin',    pw:'admin',   name:'시스템관리자', role:'관리자',       buildings:'all',     active:true, mustChange:false},
+  {id:'ceo',      pw:'1234',    name:'오정훈', role:'대표',         buildings:'all',     active:true, mustChange:false},
+  {id:'director', pw:'1234',    name:'강민수', role:'이사',         buildings:'all',     active:true, mustChange:false},
+  {id:'chongmu',  pw:'1234',    name:'문서연', role:'총무',         buildings:'all',     active:true, mustChange:false},
+  {id:'manager',  pw:'manager', name:'김소장', role:'관리소장',     buildings:['D0517'], worker:'D0517:000001', active:true, mustChange:false},
+  {id:'manager2', pw:'1234',    name:'한소장', role:'관리소장',     buildings:['D0662'], worker:'D0662:000001', active:true, mustChange:false},
+  {id:'jumim',    pw:'1234',    name:'박기사', role:'시설관리주임', buildings:['D0517'], worker:'D0517:000003', active:true, mustChange:false},
+  {id:'kyung',    pw:'1234',    name:'이경리', role:'경리',         buildings:['D0517'], worker:'D0517:000002', active:true, mustChange:false},
+  {id:'mihwa',    pw:'1234',    name:'최미화', role:'미화원',       buildings:['D0517'], worker:'D0517:000004', active:true, mustChange:false},
+  {id:'guard',    pw:'1234',    name:'정경비', role:'경비',         buildings:['D0517'], worker:'D0517:000005', active:true, mustChange:false},
+  {id:'owner',    pw:'1234',    name:'송재호', role:'건물주',       buildings:['D0517'], active:true, mustChange:false},
+  {id:'new',      pw:'0000',    name:'윤미화', role:'미화원',       buildings:['D0662'], worker:'D0662:000003', active:true, mustChange:true},
+];
+function loadUsers(){
+  try{ const u=JSON.parse(localStorage.getItem('buildone_users')||'null'); if(Array.isArray(u)&&u.length&&localStorage.getItem('buildone_users_ver')===USERS_VER) return u; }catch(e){}
+  localStorage.setItem('buildone_users', JSON.stringify(SEED_USERS)); localStorage.setItem('buildone_users_ver', USERS_VER);
+  return SEED_USERS.slice();
+}
+function saveUsers(list){ localStorage.setItem('buildone_users', JSON.stringify(list)); }
+function getSession(){ try{ return JSON.parse(localStorage.getItem('buildone_session')||'null'); }catch(e){ return null; } }
+
+let users=loadUsers();
+let pending=null, pwMode='forced';   // 비밀번호 변경 대상/모드
+
+// ---- 이미 로그인 상태면 안내 ----
+function renderState(){
+  const s=getSession();
+  if(s){
+    $('loginForm').style.display='none'; $('demoBox').style.display='none'; $('pwForm').style.display='none';
+    $('signed').style.display='block';
+    $('signedWho').textContent='✔ '+s.name+' 님, 로그인 중';
+    $('signedRole').textContent='권한: '+(s.role||'-');
+  }
+}
+renderState();
+
+// ---- 데모 계정 칩 ----
+$('chips').innerHTML=users.map(u=>
+  `<span class="chip" data-id="${u.id}" data-pw="${u.pw}"><b>${u.role}</b> ${u.name} · ${u.id}${u.mustChange?' <span style="color:#c0392b">★초기</span>':''}</span>`).join('');
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+  $('uid').value=c.dataset.id; $('upw').value=c.dataset.pw; $('err').style.display='none';
+}));
+// 저장된 옛 계정 목록을 현재 기본값으로 새로고침
+$('resetDemo').addEventListener('click',e=>{
+  e.preventDefault();
+  if(!confirm('데모 계정 목록을 현재 기본값으로 새로고침할까요?\n(이전에 추가·변경한 계정은 초기화됩니다)')) return;
+  ['buildone_users','buildone_roles','buildone_session','buildone_perm','buildone_current_building'].forEach(k=>localStorage.removeItem(k));
+  location.reload();
+});
+
+// ---- 로그인 완료(세션·권한맵·건물 설정 후 이동) ----
+function computePerm(role){
+  boEnsureRoles();   /* 역할 권한이 아직 없으면 기본값으로 (common_perm.js) */
+  try{ const r=JSON.parse(localStorage.getItem('buildone_roles')||'null'); if(r&&r[role]) return r[role]; }catch(e){}
+  return {};
+}
+function completeLogin(u){
+  localStorage.setItem('buildone_session', JSON.stringify({id:u.id,name:u.name,role:u.role,buildings:u.buildings,worker:u.worker||'',at:new Date().toISOString()}));
+  localStorage.setItem('buildone_user', u.name+' · '+u.role);       // 상단 헤더(.who) 표시
+  localStorage.setItem('buildone_perm', JSON.stringify(computePerm(u.role)));  // 화면 액션 권한(그룹→조회/편집)
+  setDefaultBuilding(u);
+  location.href=HOME+'?t='+Date.now();
+}
+function showPwForm(u, mode, lead){
+  pending=u; pwMode=mode;
+  $('loginForm').style.display='none'; $('demoBox').style.display='none'; $('signed').style.display='none';
+  $('pwForm').style.display='block'; $('pwLead').textContent=lead;
+  $('npw').value=''; $('npw2').value=''; $('pwErr').style.display='none'; $('npw').focus();
+}
+
+// ---- 로그인 처리 ----
+$('loginForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const id=$('uid').value.trim(), pw=$('upw').value;
+  users=loadUsers();
+  const u=users.find(x=>x.id===id && x.pw===pw && x.active!==false);
+  if(!u){ $('err').style.display='block'; return; }
+  if(u.mustChange){ showPwForm(u,'forced','초기 비밀번호입니다. 새 비밀번호로 변경하면 로그인됩니다.'); return; }
+  completeLogin(u);
+});
+
+// ---- 비밀번호 변경 처리 (강제/본인 공용) ----
+$('pwForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const a=$('npw').value, b=$('npw2').value, err=$('pwErr');
+  const fail=m=>{ err.textContent=m; err.style.display='block'; };
+  if(a.length<MINPW) return fail('비밀번호는 '+MINPW+'자 이상이어야 합니다.');
+  if(a!==b) return fail('새 비밀번호가 서로 일치하지 않습니다.');
+  if(pwMode==='self' && pending && a===pending.pw) return fail('기존 비밀번호와 다른 값을 입력하세요.');
+  users=loadUsers();
+  const u=users.find(x=>x.id===pending.id);
+  if(u){ u.pw=a; u.mustChange=false; saveUsers(users); }
+  if(pwMode==='forced'){ completeLogin(u); }
+  else { alert('비밀번호가 변경되었습니다.'); location.reload(); }
+});
+$('pwCancel').addEventListener('click',()=>location.reload());
+
+// ---- 로그인 후 기본(첫) 건물 설정 ----
+function setDefaultBuilding(u){
+  try{
+    const bl=JSON.parse(localStorage.getItem('buildone_buildings')||'[]');
+    if(!Array.isArray(bl)||!bl.length) return;   // 등록된 건물 없으면 그대로
+    const codeOf=e=>String(e.code||e.코드||e.id||'');
+    let idx=0;   // 기본: 목록 첫 건물
+    if(Array.isArray(u.buildings)&&u.buildings.length){
+      const i=bl.findIndex(e=>u.buildings.includes(codeOf(e)));
+      if(i>=0) idx=i;   // 접근 가능한 첫 건물
+    }
+    localStorage.setItem('buildone_current_building', String(idx));
+  }catch(e){}
+}
+
+// ---- 로그인 상태 버튼 ----
+$('goApp').addEventListener('click',()=>location.href=HOME+'?t='+Date.now());
+$('changePw').addEventListener('click',()=>{
+  const s=getSession(); if(!s) return;
+  users=loadUsers();
+  const u=users.find(x=>x.id===s.id);
+  if(!u){ alert('사용자를 찾을 수 없습니다.'); return; }
+  showPwForm(u,'self','현재 로그인한 계정('+s.name+')의 비밀번호를 변경합니다.');
+});
+$('doLogout').addEventListener('click',()=>{
+  localStorage.removeItem('buildone_session');
+  location.reload();
+});
+</script>
+</body>
+</html>

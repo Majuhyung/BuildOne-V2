@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<script>/* V2 로그인 게이트 — 세션이 없으면 로그인 화면으로 */
+(function(){ try{ if(!localStorage.getItem('buildone_session')){ (window.top||window).location.replace('00_로그인.html'); } }catch(e){} })();
+</script>
+<script src="common_perm.js?v=1792576637"></script>
+<script src="common_header.js?v=1792583998"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BuildOne 2.0 — 사용자 · 권한</title>
+<link rel="icon" type="image/svg+xml" href="아이콘/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+<style>
+  :root{ --navy:#1f3864; --accent:#3b5bdb; --line:#e3e7ed; --ink:#23272f; --sub:#6b727c; --bg:#f4f6f9; }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Noto Sans KR','Malgun Gothic',sans-serif;background:var(--bg);color:var(--ink);font-size:13.5px;}
+  header{background:#fff;border-bottom:1px solid var(--line);padding:14px 22px;}
+  header h1{margin:0;font-size:18px;color:var(--navy);}
+  header p{margin:4px 0 0;font-size:12.5px;color:var(--sub);}
+  .tabs{display:flex;gap:2px;background:#fff;border-bottom:1px solid var(--line);padding:0 18px;}
+  .tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:12px 18px;font-size:14px;color:var(--sub);cursor:pointer;font-weight:600;font-family:inherit;}
+  .tabs button.on{color:var(--accent);border-bottom-color:var(--accent);}
+  .wrap{padding:18px 22px 40px;}
+  .page{display:none;} .page.on{display:block;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:16px;}
+  .card h3{margin:0 0 12px;font-size:14px;color:var(--navy);}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{border:1px solid #e6e9ef;padding:8px 10px;text-align:left;}
+  th{background:#eef1f7;color:#33405c;font-weight:700;white-space:nowrap;}
+  td.c,th.c{text-align:center;}
+  .btn{border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:7px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .btn.ghost{background:#fff;color:var(--accent);}
+  .btn.sm{padding:5px 9px;font-size:12px;}
+  .btn.gray{border-color:#c4cad4;background:#fff;color:#5a6270;}
+  .btn.danger{border-color:#e0b4b4;background:#fff;color:#c0392b;}
+  .row{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;}
+  .fld{display:flex;flex-direction:column;gap:4px;}
+  .fld label{font-size:12px;color:var(--sub);font-weight:600;}
+  .fld input,.fld select{border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;min-width:130px;}
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:#eef3ff;color:var(--accent);font-weight:600;}
+  .tag.off{background:#f1f2f4;color:#8a8f98;}
+  .note{font-size:12px;color:var(--sub);line-height:1.7;background:#fbfcfe;border:1px solid #eef1f6;border-radius:8px;padding:11px 13px;margin-bottom:14px;}
+  .note b{color:var(--navy);}
+  .muted{color:var(--sub);font-size:12px;}
+  input[type=checkbox]{width:16px;height:16px;cursor:pointer;}
+  .rolechip{font-size:11px;padding:2px 8px;border-radius:20px;background:#e7ecff;color:#2f3e6e;font-weight:600;}
+  .actions{display:flex;gap:6px;}
+  #uRows td:nth-child(2),#uRows td:nth-child(3),#uRows td:nth-child(5){white-space:nowrap;}
+  .bpick-btn{display:inline-flex;align-items:center;justify-content:space-between;gap:10px;min-width:180px;max-width:280px;border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;color:inherit;cursor:pointer;text-align:left;}
+  td .bpick-btn{min-width:150px;padding:5px 9px;font-size:12px;} .bpick-btn:hover{border-color:var(--accent);} .bpick-btn .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .bpick-btn .a{color:var(--sub);font-size:11px;}
+  #bpPop{position:fixed;z-index:200;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(20,30,50,.18);padding:10px 12px;min-width:240px;max-height:320px;overflow:auto;display:none;}
+  #bpPop label{display:flex;align-items:center;gap:8px;padding:6px 4px;font-size:13px;cursor:pointer;border-radius:6px;} #bpPop label:hover{background:#f4f7ff;} #bpPop small{color:var(--sub);margin-left:auto;}
+  #bpPop .bp-all{font-weight:700;border-bottom:1px solid var(--line);border-radius:0;margin-bottom:4px;padding-bottom:8px;} #bpPop .bp-f{display:flex;justify-content:flex-end;gap:6px;margin-top:8px;}
+  .actions .btn{white-space:nowrap;}   /* V2: [사용 안 함] 한 줄로 */
+</style>
+</head>
+<body>
+<header>
+  <h1>사용자 · 권한 관리 (RBAC)</h1>
+  <p>로그인 계정과 계정별 역할 · 접근 건물을 관리합니다. <span class="muted">현재 로그인: <b id="me">-</b></span></p>
+</header>
+<div class="tabs" style="display:none">
+  <button data-t="users" class="on">① 사용자</button>
+  <button data-t="roles">② 역할 · 권한</button>
+  <button data-t="bldgs">③ 접근 건물</button>
+</div>
+<div class="wrap">
+
+  <!-- ① 사용자 -->
+  <section class="page on" id="p-users">
+    <div class="note">사용자를 등록하고 <b>역할</b>과 <b>접근 건물</b>을 지정합니다. 접근 건물은 <b>▾</b>를 눌러 건물을 고릅니다. (사용자 목록에서도 바로 바꿀 수 있습니다)</div>
+    <div class="card">
+      <h3 id="formTitle">사용자 추가</h3>
+      <div class="row">
+        <div class="fld"><label>아이디</label><input id="f_id" placeholder="영문/숫자"></div>
+        <div class="fld"><label>이름</label><input id="f_name" placeholder="성명"></div>
+        <div class="fld"><label>비밀번호</label><input id="f_pw" placeholder="초기 비밀번호"></div>
+        <div class="fld"><label>역할</label><select id="f_role"></select></div>
+        <div class="fld"><label>접근 건물</label><div id="f_bldPick"></div></div>
+        <div class="fld"><label>상태</label><select id="f_active"><option value="1">활성</option><option value="0">비활성</option></select></div>
+        <div class="fld"><label>&nbsp;</label>
+          <div class="actions">
+            <button class="btn" id="saveUser">저장</button>
+            <button class="btn gray" id="resetUser" style="display:none">취소</button>
+          </div>
+        </div>
+      </div>
+      <div class="muted" style="margin-top:8px">※ <b>전체 건물</b>은 앞으로 추가될 건물까지 포함합니다 · 신규 계정은 여기 입력한 비밀번호가 <b>초기 비밀번호</b>로, 사용자는 <b>최초 로그인 시 변경</b>해야 합니다.</div>
+    </div>
+    <div class="card">
+      <h3>사용자 목록 (<span id="uCount">0</span>명)</h3>
+      <table>
+        <thead><tr><th>아이디</th><th>이름</th><th>역할</th><th>접근 건물</th><th class="c">상태</th><th class="c">관리</th></tr></thead>
+        <tbody id="uRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ② 역할·권한 -->
+  <section class="page" id="p-roles" style="display:none!important">
+    <div class="note"><b>역할</b>별로 메뉴 그룹의 권한을 <b>3단계</b>로 정합니다 — <b>없음</b>(안 보임) · <b>조회</b>(보기만, 저장·실행 불가) · <b>편집</b>(등록·수정·처리 가능). '조회'는 화면은 열리되 저장/실행 버튼이 비활성화됩니다. (관리자는 전체 편집 고정)</div>
+    <div class="card">
+      <h3>역할 × 메뉴 권한 매트릭스</h3>
+      <div style="overflow:auto"><table id="roleMatrix"></table></div>
+      <div class="actions" style="margin-top:12px"><button class="btn" id="saveRoles">권한 저장</button><button class="btn gray" id="resetRoles">기본값 복원</button></div>
+    </div>
+  </section>
+
+  <!-- ③ 접근 건물 -->
+  <section class="page" id="p-bldgs" style="display:none!important">
+    <div class="note"><b>단일 회사 전용</b> — 이 시스템은 한 관리주체(회사)가 쓰는 설치본입니다. 사용자별로 접근 가능한 건물을 지정하며, <b>'전체'</b>는 <b>이 회사가 관리하는 모든 건물</b>을 뜻합니다(회사 경계를 넘지 않음, 향후 추가 건물 포함). ※ 여러 관리회사를 한 시스템에서 운영하려면 회사(고객사) 단위 설계가 별도 필요합니다.</div>
+    <div class="card">
+      <h3>사용자 × 건물 접근</h3>
+      <div style="overflow:auto"><table id="bldMatrix"></table></div>
+      <div class="actions" style="margin-top:12px"><button class="btn" id="saveBld">접근 저장</button></div>
+      <div class="muted" id="bldNote" style="margin-top:8px"></div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+// ================= 데이터 =================
+// 본사(대표·이사·총무) · 현장 관리사무소(관리소장·시설관리주임·경리) · 현장 종사자(미화원·경비) · 외부(건물주) + 시스템관리자
+const ROLES=BO_ROLES;
+// V2 — 통합메뉴(01)에 있는 메뉴 그룹만. 역할 · 그룹 · 기본 권한은 common_perm.js 한 곳에서 관리
+const GROUPS=BO_GROUPS;
+const LEVELS=BO_LEVELS;
+const LEVEL_LABEL={none:'없음', view:'조회', edit:'편집'};
+const DEFAULT_ROLES=BO_DEFAULT_ROLES;
+function rolePerm(o){ return Object.fromEntries(GROUPS.map(g=>[g, (o.edit||[]).includes(g)?'edit':(o.view||[]).includes(g)?'view':'none'])); }
+
+const USERS_VER='2';   // 계정 구조 개편(2026-10): 9개 직책 + 시스템관리자 — 옛 목록이면 새로 채움
+const SEED_USERS=[
+  {id:'admin',    pw:'admin',   name:'시스템관리자', role:'관리자',       buildings:'all',     active:true, mustChange:false},
+  {id:'ceo',      pw:'1234',    name:'오정훈', role:'대표',         buildings:'all',     active:true, mustChange:false},
+  {id:'director', pw:'1234',    name:'강민수', role:'이사',         buildings:'all',     active:true, mustChange:false},
+  {id:'chongmu',  pw:'1234',    name:'문서연', role:'총무',         buildings:'all',     active:true, mustChange:false},
+  {id:'manager',  pw:'manager', name:'김소장', role:'관리소장',     buildings:['D0517'], worker:'D0517:000001', active:true, mustChange:false},
+  {id:'manager2', pw:'1234',    name:'한소장', role:'관리소장',     buildings:['D0662'], worker:'D0662:000001', active:true, mustChange:false},
+  {id:'jumim',    pw:'1234',    name:'박기사', role:'시설관리주임', buildings:['D0517'], worker:'D0517:000003', active:true, mustChange:false},
+  {id:'kyung',    pw:'1234',    name:'이경리', role:'경리',         buildings:['D0517'], worker:'D0517:000002', active:true, mustChange:false},
+  {id:'mihwa',    pw:'1234',    name:'최미화', role:'미화원',       buildings:['D0517'], worker:'D0517:000004', active:true, mustChange:false},
+  {id:'guard',    pw:'1234',    name:'정경비', role:'경비',         buildings:['D0517'], worker:'D0517:000005', active:true, mustChange:false},
+  {id:'owner',    pw:'1234',    name:'송재호', role:'건물주',       buildings:['D0517'], active:true, mustChange:false},
+  {id:'new',      pw:'0000',    name:'윤미화', role:'미화원',       buildings:['D0662'], worker:'D0662:000003', active:true, mustChange:true},
+];
+const DEMO_BLDGS=[{code:'D0517',name:'대성빌딩 (강남)'},{code:'D0662',name:'대성2빌딩 (구로)'}];
+
+const LS={
+  users:'buildone_users', roles:'buildone_roles', bldgs:'buildone_buildings', session:'buildone_session'
+};
+function jget(k,def){ try{ const v=JSON.parse(localStorage.getItem(k)||'null'); return v==null?def:v; }catch(e){ return def; } }
+function jset(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+
+let users = jget(LS.users, null); if(!Array.isArray(users)||!users.length||localStorage.getItem('buildone_users_ver')!==USERS_VER){ users=SEED_USERS.slice(); jset(LS.users,users); localStorage.setItem('buildone_users_ver',USERS_VER); }
+let roles = jget(LS.roles, null);
+// 스키마 검증 — 그룹 구성이 바뀌었으면(옛 데이터) 기본값으로 재설정
+function rolesValid(r){
+  if(!r||!ROLES.every(role=>r[role])) return false;   // 모든 역할(관리자 포함) 존재해야 함
+  const a=r['관리소장'], keys=Object.keys(a);
+  if(!(GROUPS.every(g=>keys.includes(g)) && keys.every(k=>GROUPS.includes(k)))) return false;
+  return GROUPS.every(g=>LEVELS.includes(a[g]));   // 값이 none/view/edit(옛 boolean이면 재설정)
+}
+if(!rolesValid(roles)){ roles=JSON.parse(JSON.stringify(DEFAULT_ROLES)); jset(LS.roles,roles); }
+// 건물 목록(다른 화면 데이터 재사용, 없으면 데모)
+function loadBldgs(){
+  const raw=jget(LS.bldgs, null);
+  if(Array.isArray(raw)&&raw.length){
+    return raw.map((e,i)=>{ const nm=e.name||e.명||e.건물명||e.단지명||('건물'+(i+1)), rg=(e.region||'').trim();   // 이름 (지점) — 같은 이름의 여러 지점 구분
+      return {code:String(e.code||e.코드||e.id||('B'+(i+1))), name:rg&&!nm.includes(rg)?`${nm} (${rg})`:nm}; });
+  }
+  return DEMO_BLDGS.slice();
+}
+let bldgs=loadBldgs();
+
+// 현재 로그인 표시
+const sess=jget(LS.session,null);
+document.getElementById('me').textContent = sess?`${sess.name} (${sess.role})`:'게스트';
+
+// ================= 탭 =================
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.getElementById('p-'+b.dataset.t).classList.add('on');
+  if(b.dataset.t==='roles') renderRoles();
+  if(b.dataset.t==='bldgs') renderBld();
+}));
+
+// ================= ① 사용자 =================
+let editId=null;
+function bldLabel(b){ return b==='all'?'전체 건물':(Array.isArray(b)?b.map(c=>{const f=bldgs.find(x=>x.code===c);return f?f.name:c;}).join(', ')||'없음':'-'); }
+function fillRoleSelect(){ document.getElementById('f_role').innerHTML=ROLES.map(r=>`<option>${r}</option>`).join(''); }
+function renderUsers(){
+  const tb=document.getElementById('uRows');
+  tb.innerHTML=users.map(u=>`<tr>
+    <td><b>${u.id}</b></td><td>${u.name}${u.mustChange?' <span class="tag" style="background:#fdecea;color:#c0392b">초기비번</span>':''}</td>
+    <td><span class="rolechip">${u.role}</span></td>
+    <td>${bpickBtn('u:'+u.id,u.buildings)}</td>
+    <td class="c">${u.active!==false?'<span class="tag">활성</span>':'<span class="tag off">비활성</span>'}</td>
+    <td class="c"><div class="actions" style="justify-content:center">
+      <button class="btn sm gray" onclick="editUser('${u.id}')">수정</button>
+      <button class="btn sm gray" onclick="resetPw('${u.id}')">비번초기화</button>
+      <button class="btn sm ${u.active!==false?'danger':'gray'}" onclick="delUser('${u.id}')">${u.active!==false?'사용 안 함':'다시 사용'}</button>
+    </div></td></tr>`).join('');
+  document.getElementById('uCount').textContent=users.length;
+}
+window.editUser=function(id){
+  const u=users.find(x=>x.id===id); if(!u) return;
+  editId=id;
+  document.getElementById('f_id').value=u.id; document.getElementById('f_id').disabled=true;
+  document.getElementById('f_name').value=u.name;
+  document.getElementById('f_pw').value=u.pw;
+  document.getElementById('f_role').value=u.role;
+  setFormBlds(u.buildings==='all'?'all':(Array.isArray(u.buildings)?u.buildings.slice():[]));
+  document.getElementById('f_active').value=u.active!==false?'1':'0';
+  document.getElementById('formTitle').textContent='사용자 수정 — '+u.id;
+  document.getElementById('resetUser').style.display='';
+  window.scrollTo({top:0,behavior:'smooth'});
+};
+window.delUser=function(id){   /* V2: 계정은 지우지 않고 '사용 안 함'으로 — 그 사람이 남긴 기록의 주인이 사라지지 않게 */
+  const u=users.find(x=>x.id===id); if(!u) return;
+  if(sess&&sess.id===id){ alert('본인 계정은 사용 안 함으로 바꿀 수 없습니다.'); return; }
+  const off=u.active!==false;
+  if(!confirm(off?`${u.name}(${id}) 계정을 사용 안 함으로 바꿀까요?\n로그인만 막히고 계정 기록은 그대로 남습니다.`:`${u.name}(${id}) 계정을 다시 사용할까요?`)) return;
+  u.active=!off; jset(LS.users,users); renderUsers();
+};
+window.resetPw=function(id){
+  const u=users.find(x=>x.id===id); if(!u) return;
+  const tmp=prompt(u.name+' 계정의 임시 비밀번호를 입력하세요.\n(사용자는 다음 로그인 시 새 비밀번호로 변경해야 합니다)', '0000');
+  if(tmp===null) return;
+  if(!tmp.trim()){ alert('임시 비밀번호를 입력하세요.'); return; }
+  u.pw=tmp.trim(); u.mustChange=true; jset(LS.users,users); renderUsers();
+  alert('임시 비밀번호로 초기화했습니다. 사용자는 다음 로그인 시 변경합니다.');
+};
+function resetForm(){
+  editId=null;
+  ['f_id','f_name','f_pw'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('f_id').disabled=false;
+  setFormBlds('all'); document.getElementById('f_active').value='1';
+  document.getElementById('formTitle').textContent='사용자 추가';
+  document.getElementById('resetUser').style.display='none';
+}
+document.getElementById('resetUser').addEventListener('click',resetForm);
+document.getElementById('saveUser').addEventListener('click',()=>{
+  const id=document.getElementById('f_id').value.trim();
+  const name=document.getElementById('f_name').value.trim();
+  const pw=document.getElementById('f_pw').value.trim();
+  const role=document.getElementById('f_role').value;
+  const bldSel=formBlds;
+  const active=document.getElementById('f_active').value==='1';
+  if(!id||!name||!pw){ alert('아이디·이름·비밀번호는 필수입니다.'); return; }
+  if(bldSel!=='all'&&!bldSel.length){ alert('접근 건물을 하나 이상 고르세요.'); return; }
+  if(!editId && users.some(u=>u.id===id)){ alert('이미 존재하는 아이디입니다.'); return; }
+  const isAdmin=sess&&sess.role==='관리자';
+  if(role==='관리자'&&!isAdmin){ alert('관리자 역할은 시스템관리자만 줄 수 있습니다.'); return; }
+  if(editId&&sess&&editId===sess.id){ const me=users.find(x=>x.id===editId);
+    if(me&&me.role!==role){ alert('본인의 역할은 바꿀 수 없습니다.'); return; }
+    if(!active){ alert('본인 계정은 사용 안 함으로 바꿀 수 없습니다.'); return; } }
+  if(editId){
+    const u=users.find(x=>x.id===editId);
+    u.name=name; u.pw=pw; u.role=role; u.active=active;
+    u.buildings=bldSel==='all'?'all':bldSel.slice();
+  }else{
+    users.push({id,name,pw,role,active,buildings: bldSel==='all'?'all':bldSel.slice(), mustChange:true});  // 신규: 최초 로그인 시 변경
+  }
+  jset(LS.users,users); renderUsers(); resetForm();
+});
+
+// ================= ② 역할·권한 =================
+function renderRoles(){
+  let h='<thead><tr><th>메뉴 그룹 \\ 역할</th>'+ROLES.map(r=>`<th class="c">${r}</th>`).join('')+'</tr></thead><tbody>';
+  h+=GROUPS.map(g=>`<tr><td>${g}</td>`+ROLES.map(r=>{
+    const cur=(roles[r]&&roles[r][g])||'none';
+    const lock=(r==='관리자');
+    const opts=LEVELS.map(l=>`<option value="${l}" ${cur===l?'selected':''}>${LEVEL_LABEL[l]}</option>`).join('');
+    return `<td class="c"><select class="lvl" data-r="${r}" data-g="${g}" ${lock?'disabled':''}>${opts}</select></td>`;
+  }).join('')+'</tr>').join('');
+  h+='</tbody>';
+  document.getElementById('roleMatrix').innerHTML=h;
+}
+document.getElementById('saveRoles').addEventListener('click',()=>{
+  document.querySelectorAll('#roleMatrix select.lvl').forEach(s=>{
+    const r=s.dataset.r,g=s.dataset.g; roles[r]=roles[r]||{}; roles[r][g]=s.value;
+  });
+  roles['관리자']=Object.fromEntries(GROUPS.map(g=>[g,'edit']));     // 관리자 전체 편집 고정
+  jset(LS.roles,roles); if(sess&&roles[sess.role]) localStorage.setItem('buildone_perm',JSON.stringify(roles[sess.role]));   /* 내 권한은 바로 반영 */
+  alert('역할별 권한을 저장했습니다. (다른 사용자는 다음 로그인부터 적용)');
+});
+document.getElementById('resetRoles').addEventListener('click',()=>{
+  if(!confirm('역할 권한을 기본값으로 되돌릴까요?')) return;
+  roles=JSON.parse(JSON.stringify(DEFAULT_ROLES)); jset(LS.roles,roles); renderRoles();
+});
+
+// ================= ③ 접근 건물 =================
+function renderBld(){
+  bldgs=loadBldgs();
+  let h='<thead><tr><th>사용자</th><th class="c">전체</th>'+bldgs.map(b=>`<th class="c">${b.name}<br><span class="muted">${b.code}</span></th>`).join('')+'</tr></thead><tbody>';
+  h+=users.map(u=>{
+    const all=u.buildings==='all';
+    const set=Array.isArray(u.buildings)?u.buildings:[];
+    return `<tr><td><b>${u.name}</b> <span class="muted">(${u.id}·${u.role})</span></td>
+      <td class="c"><input type="checkbox" data-u="${u.id}" data-all="1" ${all?'checked':''}></td>`+
+      bldgs.map(b=>`<td class="c"><input type="checkbox" data-u="${u.id}" data-code="${b.code}" ${all?'checked disabled':(set.includes(b.code)?'checked':'')}></td>`).join('')+
+      `</tr>`;
+  }).join('');
+  h+='</tbody>';
+  document.getElementById('bldMatrix').innerHTML=h;
+  document.getElementById('bldNote').innerHTML='건물 목록은 <b>건물관리 > 건물정보 등록</b>에서 등록한 건물을 사용합니다. (현재 '+bldgs.length+'개'+(jget(LS.bldgs,null)?'':' · 데모 목록')+')';
+  // 전체 체크 시 개별 비활성 토글
+  document.querySelectorAll('#bldMatrix input[data-all]').forEach(cb=>cb.addEventListener('change',()=>{
+    const u=cb.dataset.u;
+    document.querySelectorAll(`#bldMatrix input[data-u="${u}"][data-code]`).forEach(x=>{ x.disabled=cb.checked; if(cb.checked)x.checked=true; });
+  }));
+}
+document.getElementById('saveBld').addEventListener('click',()=>{
+  users.forEach(u=>{
+    const all=document.querySelector(`#bldMatrix input[data-u="${u.id}"][data-all]`);
+    if(all&&all.checked){ u.buildings='all'; }
+    else{
+      const codes=[...document.querySelectorAll(`#bldMatrix input[data-u="${u.id}"][data-code]:checked`)].map(x=>x.dataset.code);
+      u.buildings=codes;
+    }
+  });
+  jset(LS.users,users); renderUsers(); alert('사용자별 접근 건물을 저장했습니다.');
+});
+
+// init
+fillRoleSelect();   /* 사용자 목록은 접근 건물 고르기 준비 뒤(아래 스크립트)에서 그림 */
+
+// ================= 권한 적용 — '시스템 설정'이 없음이면 차단, 조회면 읽기전용 =================
+
+(function(){
+  const lvl=v2Perm('시스템 설정');   // V2: 관리자는 편집, 정해지지 않았으면 없음(거부)
+  if(lvl==='none'){ v2Deny('사용자 · 권한'); return; }
+  if(lvl!=='view') return;
+  const st=document.createElement('style');
+  st.textContent='body.ro .wrap button,body.ro .wrap input,body.ro .wrap select{pointer-events:none;opacity:.55;cursor:not-allowed;}';
+  document.head.appendChild(st);
+  document.body.classList.add('ro');
+  const b=document.createElement('div'); b.className='note';
+  b.style.cssText='background:#fff7e0;border-color:#ead9a0';
+  b.innerHTML='🔒 <b>조회 권한</b> — 이 화면은 보기 전용입니다. 저장·추가·삭제·초기화가 비활성화됩니다. (권한: 시스템 설정 = 조회)';
+  const wrap=document.querySelector('.wrap'); wrap.insertBefore(b, wrap.firstChild);
+})();
+</script>
+<script>/* V2 — 접근 건물 고르기 (▾ 누르면 모든 건물) */
+const bpEsc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function bldSummary(v){ if(v==='all') return '전체 건물'; const a=Array.isArray(v)?v:[]; if(!a.length) return '선택 안 함';
+  const n=a.map(c=>{ const f=bldgs.find(x=>x.code===c); return f?f.name:c; }); return n.length<=2?n.join(', '):n[0]+' 외 '+(n.length-1)+'곳'; }
+function bpickBtn(key,v){ return `<button type="button" class="bpick-btn" data-k="${bpEsc(key)}" title="${bpEsc(v==='all'?'전체 건물':(Array.isArray(v)?v.map(c=>{const f=bldgs.find(x=>x.code===c);return f?f.name:c;}).join(', '):''))}"><span class="t">${bpEsc(bldSummary(v))}</span><span class="a">▾</span></button>`; }
+let formBlds='all';
+function setFormBlds(v){ formBlds=v; document.getElementById('f_bldPick').innerHTML=bpickBtn('form',v); }
+const pop=document.createElement('div'); pop.id='bpPop'; document.body.appendChild(pop);
+let popKey=null;
+function closePop(){ pop.style.display='none'; popKey=null; }
+function openPop(btn){
+  bldgs=loadBldgs();
+  const key=btn.dataset.k, cur=key==='form'?formBlds:((users.find(u=>'u:'+u.id===key)||{}).buildings);
+  const all=cur==='all', set=Array.isArray(cur)?cur:[];
+  pop.innerHTML=`<label class="bp-all"><input type="checkbox" data-all ${all?'checked':''}> 전체 건물 <small>앞으로 추가될 건물 포함</small></label>`
+    +bldgs.map(b=>`<label><input type="checkbox" data-code="${bpEsc(b.code)}" ${all||set.includes(b.code)?'checked':''} ${all?'disabled':''}> ${bpEsc(b.name)} <small>${bpEsc(b.code)}</small></label>`).join('')
+    +`<div class="bp-f"><button type="button" class="btn gray" data-x>닫기</button><button type="button" class="btn" data-ok>적용</button></div>`;
+  const r=btn.getBoundingClientRect(); pop.style.display='block';
+  const z=parseFloat(getComputedStyle(document.body).zoom)||1;   /* 화면 확대(1.15배) 보정 */
+  let left=r.left/z, top=(r.bottom+4)/z; const pw=pop.offsetWidth, ph=pop.offsetHeight, vw=innerWidth/z, vh=innerHeight/z;
+  if(left+pw>vw-8) left=Math.max(8,vw-pw-8); if(top+ph>vh-8) top=Math.max(8,r.top/z-ph-4);
+  pop.style.left=left+'px'; pop.style.top=top+'px'; popKey=key;
+  pop.querySelector('[data-all]').addEventListener('change',e=>{ pop.querySelectorAll('[data-code]').forEach(x=>{ x.disabled=e.target.checked; if(e.target.checked) x.checked=true; }); });
+  pop.querySelector('[data-x]').addEventListener('click',closePop);
+  pop.querySelector('[data-ok]').addEventListener('click',()=>{
+    const v=pop.querySelector('[data-all]').checked?'all':[...pop.querySelectorAll('[data-code]:checked')].map(x=>x.dataset.code);
+    if(v!=='all'&&!v.length){ alert('접근 건물을 하나 이상 고르세요.'); return; }
+    if(key==='form'){ setFormBlds(v); }
+    else { const u=users.find(x=>'u:'+x.id===key); if(u){ u.buildings=v; jset(LS.users,users);
+      if(sess&&sess.id===u.id){ sess.buildings=v; localStorage.setItem('buildone_session',JSON.stringify(sess)); }   /* 내 계정이면 바로 반영 */
+      renderUsers(); } }
+    closePop(); });
+}
+document.addEventListener('click',e=>{ const b=e.target.closest('.bpick-btn'); if(b){ e.stopPropagation(); if(popKey===b.dataset.k){ closePop(); return; } openPop(b); return; }
+  if(popKey&&!e.target.closest('#bpPop')) closePop(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closePop(); });
+window.addEventListener('scroll',closePop,true);
+setFormBlds('all'); renderUsers();
+</script>
+</body>
+</html>

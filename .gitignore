@@ -1,0 +1,17 @@
+# OS / OneDrive 임시파일
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Word / Office 임시 잠금 파일
+~$*
+
+# 로컬 미리보기 설정(내 PC 전용 · 저장소 불필요)
+.claude/
+
+# 기획서 생성기 프로그램 — 빌드스크립트\문서생성 에서 npm install 로 다시 설치
+node_modules/
+
+# 파이썬 임시 파일
+__pycache__/
+*.pyc
