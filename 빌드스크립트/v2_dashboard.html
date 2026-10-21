@@ -92,7 +92,6 @@ function render(){
       const mine=(b.sessions||[]).filter(x=>x.status!=='cancelled'&&(x.targets||[]).includes(me));
       mine.filter(x=>x.method==='공지'&&!x.att[me]).forEach(x=>{ const late=x.due&&x.due<TODAY;
         add('mine',late?'red':'orange','📢',`교육 공지 읽고 서명하기 — 「${esc(x.title)}」`+(late?'<span class="tag red">마감 지남</span>':''),`${esc(x.instructor||'대표이사')} · ${md(x.due)}까지`,SAFE,'my'); });
-      if(pol&&!(((b.reads||{})[pol.ver]||{})[me])) add('mine','orange','📄','회사 안전보건 경영방침 읽고 서명하기',`${md(pol.date)}부터 시행`,SAFE,'my');
       mine.filter(x=>x.method==='온라인'&&x.date<=TODAY&&!x.att[me]).forEach(x=>add('mine','orange','💻',`온라인 안전교육 수강 — 「${esc(x.title)}」`,`${x.hours}시간 · 영상 보기 → 확인 문제 → 서명`,SAFE,'my'));
       mine.filter(x=>x.method!=='공지'&&x.method!=='온라인'&&x.openAt&&!x.closedAt&&!x.att[me]).forEach(x=>add('mine','red','✍',`지금 집합교육 중 — 출석 서명하기 「${esc(x.title)}」`,esc(x.place||''),SAFE,'my'));
       mine.filter(x=>x.method!=='공지'&&x.method!=='온라인'&&x.date===TODAY&&!x.openAt&&!x.att[me]).forEach(x=>add('mine','blue','📚',`오늘 집합교육 — 「${esc(x.title)}」`,`${esc(x.place||'')} · 교육이 시작되면 출석 서명`,SAFE,'my'));

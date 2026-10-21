@@ -334,7 +334,7 @@
       <span class="hint" style="margin:0" id="ceoLastView"></span>
       <button class="btn ghost sm" id="btnCeoView">✔ 현황 열람 확인</button>
     </div>
-    <div class="kpis k5" id="ceoKpis"></div>
+    <div class="kpis" id="ceoKpis"></div>
     <div class="grid2">
       <div class="card">
         <h3>사업장별 교육 이행 현황 <small>· 전 사업장</small></h3>
@@ -875,11 +875,11 @@ function curUser(){ return (typeof SESS!=='undefined'&&SESS)?SESS.name+' · '+SE
 const SR={
   '관리자':      {tabs:'*', can:'*', home:'ceo'},
   '대표':        {tabs:['notice','ceo','policy','plan','status','risk','permit','patrol','review','audit'], can:['ceoView','policy','publish','review','notice','remind','rplan','rapvCeo'], home:'notice',
-                  desc:'경영책임자 — 전 사업장 현황 확인 · 경영방침 제·개정 · 반기 점검 결재(본인 서명)'},
+                  desc:'경영책임자 — 전 사업장 현황 확인 · 반기 점검 결재(본인 서명)'},
   '이사':        {tabs:['notice','ceo','policy','plan','status','risk','permit','patrol','review','audit'], can:['plan','attend','notify','publish','reviewReq','field','approve','remind','rplan','rapvDir'], home:'notice',
                   desc:'운영 총괄 — 전 사업장 교육 이행 관리 · 대표 결재 요청'},
   '총무':        {tabs:['notice','ceo','policy','plan','status','risk','review','audit'], can:['plan','attend','notify','policy','publish','reviewReq','remind','rplan'], home:'notice',
-                  desc:'교육 행정 — 교육 계획 · 서류 관리 · 경영방침 게시 · 대표 결재 요청'},
+                  desc:'교육 행정 — 교육 계획 · 서류 관리 · 대표 결재 요청'},
   '관리소장':    {tabs:['my','edulist','risklist'], can:[], home:'my', own:true, mobile:true, mgr:true},   // 나의 안전보건 리스트 + 우리 건물 안전교육 · 위험성평가 리스트
   '시설관리주임':{tabs:['my'], can:[], home:'my', own:true, mobile:true},
   '경리':        {tabs:['my'], can:[], home:'my', own:true, mobile:true},
@@ -1164,7 +1164,6 @@ function renderCeo(){
     ['교육 이수율',`<span style="color:${barColor(pct(ok,tot))}">${pct(ok,tot)}%</span>`,`${ok} / ${tot}명 · 전 사업장`],
     ['미이수 인원',`<span style="${miss?'color:var(--warn)':''}">${miss}명</span>`,isClosed(H)?'반기 마감 · 기한 경과':'반기 내 보충교육 필요'],
     ['채용 시 교육 미실시',`<span style="${hire?'color:var(--bad)':''}">${hire}명</span>`,hire?'즉시 조치 필요':'이상 없음'],
-    ['경영방침 열람',`${pct(rd.read,rd.total)}%`,`${rd.read} / ${rd.total}명 · v${ver}`],
     ['반기 점검 결재',rv?'<span class="chip ok">결재 완료</span>':'<span class="chip soon">결재 대기</span>',
       rv?rv.at.slice(0,10)+' · '+esc(rv.title+' '+rv.by):`<a href="#review">결재하러 가기 ›</a>`],
   ].map(k=>`<div class="kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${k[2]}</div></div>`).join('');
@@ -1186,7 +1185,6 @@ function renderCeo(){
   });
   todo.push(...fieldTodos());
   if(!rv) todo.push(['📝',`<b>${H.label}</b> 안전보건 이행 점검 — 경영책임자 결재 대기`,`goTab('review')`]);
-  if(rd.total>rd.read) todo.push(['📄',`경영방침 v${ver} 미열람 종사자 ${rd.total-rd.read}명`,`goTab('policy')`]);
   BUILDINGS.forEach(b=>B(b.code).sessions.filter(s=>s.status!=='cancelled'&&s.date>TODAYS&&s.date<=ymd(addDays(TODAY,21)))
     .forEach(s=>todo.push(['📅',`${s.date} <b>${esc(b.name)}</b> 「${esc(s.title)}」 교육 예정`,`goTab('plan','${b.code}')`])));
   document.getElementById('ceoTodo').innerHTML=todo.length? todo.map(t=>`<li><span class="ic">${t[0]}</span><span class="tx">${t[1]}</span><a href="#" onclick="${t[2]};return false">바로가기 ›</a></li>`).join('')
@@ -2195,9 +2193,9 @@ function renderMine(){
   const mLive=upcoming.filter(m=>m.startedAt&&m.date<=TODAYS&&!m.att[key]);
   const toConfirm=mts.filter(m=>m.status==='done'&&!m.att[key]&&!(m.shares||{})[key]);
   const hostNow=mts.filter(m=>m.status==='scheduled'&&isHost(m)&&m.date<=TODAYS);
-  const n=todo.length+(polRead?0:1)+live.length+onl.length+mLive.length+toConfirm.length;
+  const n=todo.length+live.length+onl.length+mLive.length+toConfirm.length;
   let h=`<div class="sp"><div class="sp-top"><div><div class="sp-hi">${esc(w.name)} 님, 안녕하세요</div><div class="sp-date">${TODAY.getMonth()+1}월 ${TODAY.getDate()}일 (${DW}) · ${esc(bldName(w.bld))}</div></div>
-    <button class="btn ghost sp-reset" onclick="myReset()" title="시연용 — 서명한 교육 공지 · 경영방침을 다시 '확인할 일'로 되돌립니다">🔄 초기화</button></div>`;
+    <button class="btn ghost sp-reset" onclick="myReset()" title="시연용 — 서명한 교육 공지를 다시 '확인할 일'로 되돌립니다">🔄 초기화</button></div>`;
   h+=n?`<div class="sp-alert">📢 확인할 일이 <b>${n}건</b> 있습니다</div>`
       :`<div class="sp-ok">✅ 지금 확인할 일이 없습니다<div style="font-size:16px;font-weight:500;margin-top:4px">수고하셨습니다</div></div>`;
   /* 지금 해야 할 일 */
@@ -2211,8 +2209,6 @@ function renderMine(){
     h+=`<div class="sp-card"><div class="k">📢 ${esc(x.instructor||'대표이사')}님이 보낸 안전교육</div><div class="tt">${esc(x.title)}</div>
       <div class="mt">${md(x.date)} 보냄 · <b style="color:${late?'var(--bad)':'#3d4451'}">${md(x.due)}까지 서명${late?' (마감 지남)':''}</b></div>
       <button class="btn huge" onclick="myRead('${x.id}')">📖 읽고 서명하기</button></div>`; });
-  if(!polRead) h+=`<div class="sp-card"><div class="k">📄 회사 안전보건 경영방침</div><div class="tt">경영방침을 읽고 서명해 주세요</div>
-      <div class="mt">${esc(p.company)} · ${md(p.date)}부터 시행</div><button class="btn huge" onclick="myPolicy()">📖 읽고 서명하기</button></div>`;
   toConfirm.forEach(m=>{ h+=`<div class="sp-card"><div class="k">📋 위험성평가 결과 확인</div><div class="tt">${esc(m.title)}</div>
       <div class="mt">${md(m.heldAt.slice(0,10))} 회의 · 참석하지 못한 분은 결과를 읽고 서명해 주세요</div><button class="btn huge" onclick="myMeetRead('${m.id}')">📖 결과 읽고 서명하기</button></div>`; });
   /* 관리소장 — 오늘 진행할 일은 리스트 화면으로 안내만 */
@@ -2232,11 +2228,10 @@ function renderMine(){
   if(ahead.length) h+=`<div class="sp-sec">앞으로 있을 일</div>`+ahead.map(x=>x.html).join('');
   /* 지난 기록 — 교육 · 경영방침 · 위험성평가를 날짜순으로 */
   const past=mine.filter(x=>x.att[key]).map(x=>({at:x.att[key].at,html:pastRow(x.title,`${md(x.att[key].at.slice(0,10))} ${x.method==='온라인'?'온라인 수강':x.method==='공지'?'공지 확인 서명':'출석 서명'}`,x.att[key].sig)}));
-  if(polRead) past.push({at:polRead.at,html:pastRow('안전보건 경영방침',`${md(polRead.at.slice(0,10))} 서명`,polRead.sig)});
   mts.filter(m=>m.status==='done'&&(m.att[key]||(m.shares||{})[key])).forEach(m=>{ const a=m.att[key]||m.shares[key];
     past.push({at:a.at,html:pastRow(m.title,`${md(a.at.slice(0,10))} ${m.att[key]?'위험성평가 참석 서명':'위험성평가 결과 확인 서명'}`,a.sig)}); });
   past.sort((x,y)=>y.at.localeCompare(x.at));
-  h+=`<div class="sp-sec">지난 기록 <small style="font-weight:500;color:var(--sub);font-size:14px">교육 · 경영방침 · 위험성평가</small></div>`
+  h+=`<div class="sp-sec">지난 기록 <small style="font-weight:500;color:var(--sub);font-size:14px">교육 · 위험성평가</small></div>`
     +(past.length?past.map(x=>x.html).join(''):'<div class="hint" style="font-size:15px;margin:0 2px">아직 서명한 기록이 없습니다.</div>');
   h+=`<p class="hint" style="text-align:center;font-size:13px">서명한 기록은 회사에 안전하게 보관됩니다.</p></div>`;
   box.innerHTML=h;
@@ -2263,9 +2258,6 @@ function renderEduList(){
       <small>📅 ${md(x.date)} 공지 ~ <b style="color:${late?'var(--bad)':'#3d4451'}">${md(x.due)}까지${late?' (마감 지남)':''}</b></small>
       <small>${x.targets.length-un.length} / ${x.targets.length}명 서명${un.length?' · 아직 안 한 분: '+esc(un.join(', ')):' · 모두 완료'}</small></div>${un.length?`<span class="chip soon">${un.length}명 남음</span>`:'<span class="chip ok">완료</span>'}</div>`; }).join('')
     :'<div class="hint" style="font-size:15px;margin:0 2px">아직 받은 교육 공지가 없습니다.</div>');
-  /* 경영방침 서명 */
-  const r=b.reads[p.ver]||{}, unP=ws.filter(x=>!r[x.key]).map(x=>x.name);
-  h+=`<div class="sp-sec">📄 경영방침 서명</div><div class="sp-done"><div class="t">안전보건 경영방침 v${p.ver}<small>${ws.length-unP.length} / ${ws.length}명 서명${unP.length?' · 아직 안 한 분: '+esc(unP.join(', ')):' · 모두 완료'}</small></div>${unP.length?`<span class="chip soon">${unP.length}명 남음</span>`:'<span class="chip ok">완료</span>'}</div>`;
   /* 예정된 집합 · 온라인 교육 */
   const plan=b.sessions.filter(x=>x.status!=='cancelled'&&x.method!=='공지'&&x.date>TODAYS).sort((x,y)=>x.date.localeCompare(y.date));
   if(plan.length) h+=`<div class="sp-sec">📅 예정된 교육</div>`+plan.map(x=>`<div class="sp-done"><div class="t">${esc(x.title)}<small>${md(x.date)} (${dwOf(x.date)}) · ${esc(x.method)} · ${x.hours}시간 · 대상 ${x.targets.length}명</small></div></div>`).join('');
@@ -2809,7 +2801,7 @@ function sendNotice(){ if(!can('notice')) return deny();
 window.myOnline=id=>{ aSid=id; openOnline(myKey()); };
 /* 시연용 — 이 화면 주인의 교육 공지 · 경영방침 서명만 지워 다시 서명해 볼 수 있게 (운영에는 없음) */
 window.myReset=()=>{ const key=myKey(); if(!key) return; const w=empByKey(key), b=B(w.bld), v=curPolicy().ver;
-  if(!confirm(w.name+' 님의 교육 서명을 처음 상태로 되돌릴까요?'+String.fromCharCode(10,10)+'서명한 교육 공지 · 경영방침이 다시 "확인할 일"로 나옵니다.'+String.fromCharCode(10)+'(시연용 기능 — 실제 운영에는 없습니다)')) return;
+  if(!confirm(w.name+' 님의 교육 서명을 처음 상태로 되돌릴까요?'+String.fromCharCode(10,10)+'서명한 교육 공지가 다시 "확인할 일"로 나옵니다.'+String.fromCharCode(10)+'(시연용 기능 — 실제 운영에는 없습니다)')) return;
   let n=0; b.sessions.forEach(x=>{ if(x.method==='공지'&&x.att[key]){ delete x.att[key]; n++; } });
   if(b.reads[v]&&b.reads[v][key]){ delete b.reads[v][key]; n++; }
   if(!n){ toast('되돌릴 서명이 없습니다'); return; }

@@ -295,6 +295,20 @@ s = rep(s, "'회의에서 검토할 위험요인'} <small class=\"hint\">· ${it
         "'회의에서 검토할 위험요인'} <small class=\"hint\">· ${its.length}건${done?' · 회의를 마친 때의 내용 그대로 (이후 위험요인을 고쳐도 바뀌지 않음)':''}</small>")
 s = rep(s, "<h2>위험성평가표</h2><table><tr><th class=\"c\">공정</th>",
         "<h2>위험성평가표 <small style=\"font-weight:400\">· 회의를 마친 때의 내용</small></h2><table><tr><th class=\"c\">공정</th>")
+# 경영방침은 2.0에서 뺐으므로(경영방침 화면 없음) 안전교육 리스트 · 나의 안전보건 · 경영책임자 현황 · 메뉴 숫자에서도 뺌
+s = cut(s, "  /* 경영방침 서명 */\n", "  /* 예정된 집합 · 온라인 교육 */", "")                      # 안전교육 리스트: 경영방침 서명 현황
+s = cut(s, "  if(!polRead) h+=", "  toConfirm.forEach(m=>{ h+=`<div class=\"sp-card\"><div class=\"k\">📋 위험성평가 결과 확인", "")   # 나의 안전보건: 서명하라는 카드
+s = rep(s, "todo.length+(polRead?0:1)+live.length", "todo.length+live.length")                     # '확인할 일 n건'에서 경영방침 빼기
+s = cut(s, "  if(polRead) past.push(", "  mts.filter(m=>m.status==='done'&&(m.att[key]", "")      # 지난 기록 목록
+s = rep(s, "교육 · 경영방침 · 위험성평가</small></div>`", "교육 · 위험성평가</small></div>`")
+s = rep(s, "    ['경영방침 열람',`${pct(rd.read,rd.total)}%`,`${rd.read} / ${rd.total}명 · v${ver}`],\n", "")   # 경영책임자 현황: 숫자 칸
+s = rep(s, "  if(rd.total>rd.read) todo.push(['📄',`경영방침 v${ver} 미열람 종사자 ${rd.total-rd.read}명`,`goTab('policy')`]);\n", "")
+s = rep(s, '<div class="kpis k5" id="ceoKpis">', '<div class="kpis" id="ceoKpis">')           # 5칸 → 4칸
+# 경영방침 문구 정리 — 역할 안내 · 시연 초기화 설명
+s = rep(s, "경영책임자 — 전 사업장 현황 확인 · 경영방침 제·개정 · 반기 점검 결재(본인 서명)", "경영책임자 — 전 사업장 현황 확인 · 반기 점검 결재(본인 서명)")
+s = rep(s, "교육 행정 — 교육 계획 · 서류 관리 · 경영방침 게시 · 대표 결재 요청", "교육 행정 — 교육 계획 · 서류 관리 · 대표 결재 요청")
+s = rep(s, "시연용 — 서명한 교육 공지 · 경영방침을 다시 '확인할 일'로 되돌립니다", "시연용 — 서명한 교육 공지를 다시 '확인할 일'로 되돌립니다")
+s = rep(s, "'서명한 교육 공지 · 경영방침이 다시 \"확인할 일\"로 나옵니다.'", "'서명한 교육 공지가 다시 \"확인할 일\"로 나옵니다.'")
 # 반기: 열 때마다 기준일 연도의 상반기
 s = rep(s, "document.getElementById('halfSel').innerHTML=`<option value=\"${CUR.key}\">${CUR.label} (진행 중)</option><option value=\"${PREV.key}\">${PREV.label}</option>`;\n",
         "document.getElementById('halfSel').innerHTML=`<option value=\"${CUR.key}\">${CUR.label} (진행 중)</option><option value=\"${PREV.key}\">${PREV.label}</option>`;\n"
@@ -350,7 +364,9 @@ SAFETY = v1[sa:sb]
 SAFETY = rep(SAFETY, "  '이사':['notice','ceo',", "  '이사':['notice',")
 SAFETY = rep(SAFETY, "  '총무':['notice','ceo',", "  '총무':['notice',")
 SAFETY = rep(SAFETY, "'대표':'notice'", "'대표':'ceo'")
-SAFETY = rep(SAFETY, "':'notice'", "':'plan'", 3)   # 처음 여는 안전보건 화면: 교육 공지 → 교육 관리
+SAFETY = rep(SAFETY, "':'notice'", "':'plan'", 3)
+SAFETY = rep(SAFETY, "  const v=d.policy.versions[d.policy.versions.length-1].ver; if(!((b.reads||{})[v]||{})[s.worker]) edu++;\n", "")   # 경영방침은 2.0에 없음
+   # 처음 여는 안전보건 화면: 교육 공지 → 교육 관리
 NEWFN = ("/* 안전보건 항목은 직책별로(V1과 같음), 다른 메뉴는 그룹 권한대로 */\n"
          "function leafVisible(m,k){ if(v2Perm(m.perm||m.label)==='none') return false;\n"
          "  if(k.tab==='ceo'&&/안전보건\\.html$/.test(k.link||'')) return ROLE_NOW==='대표';   /* 경영책임자 현황은 대표만 */\n"

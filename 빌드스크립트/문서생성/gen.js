@@ -12,10 +12,12 @@ const MODS = {
 };
 (async () => {
   for (const [k, [name, mod]] of Object.entries(MODS)) {
-    if (want.length && !want.includes(k)) continue;
+    const sel = want.find(w => w === k || w.startsWith(k + ':'));   // 예: safe  /  safe:dev  /  safe:easy
+    if (want.length && !sel) continue;
+    const only = sel && sel.includes(':') ? sel.split(':')[1] : '';
     const m = require(mod);
-    await build(path.join(out, `BuildOne2_${name}_쉬운기획서.docx`), `BuildOne 2.0 ${name} 쉬운 기획서`, m.easy);
-    await build(path.join(out, `BuildOne2_${name}_개발기획서.docx`), `BuildOne 2.0 ${name} 개발 기획서`, m.dev);
+    if (!only || only === 'easy') await build(path.join(out, `BuildOne2_${name}_기획서.docx`), `BuildOne 2.0 ${name} 기획서`, m.easy);
+    if (!only || only === 'dev') await build(path.join(out, `BuildOne2_${name}_개발기획서.docx`), `BuildOne 2.0 ${name} 개발 기획서`, m.dev);
     console.log('made', name);
   }
 })().catch(e => { console.error(e); process.exit(1); });
